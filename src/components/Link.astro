@@ -12,7 +12,6 @@ interface Props {
 const { text, href, variant = 'capsule', external = false, icon } = Astro.props;
 
 const baseStyles = "inline-flex items-center justify-center gap-2 transition-all duration-200 font-medium cursor-pointer";
-
 const variants = {
   capsule: "px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5",
   article: "text-gray-300 hover:text-white hover:underline decoration-2 underline-offset-4"
