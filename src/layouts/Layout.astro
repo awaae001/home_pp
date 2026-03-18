@@ -1,15 +1,51 @@
 ---
 import '../styles/global.css';
+
+interface Props {
+	title?: string;
+	description?: string;
+	canonicalPath?: string;
+}
+
+const {
+	title = 'awaae001 · Home',
+	description = 'awaae001 的个人主页，包含博客入口、关于页面与个人链接。',
+	canonicalPath = '/',
+} = Astro.props;
+
+const siteUrl = 'https://awaae001.top';
+const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
+const ogImage = `${siteUrl}/favicon.svg`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="canonical" href={canonicalUrl} />
 		<meta name="generator" content={Astro.generator} />
-		<title>awaae001 - Home</title>
+		<meta name="description" content={description} />
+		<meta name="author" content="awaae001" />
+		<meta name="robots" content="index, follow" />
+		<meta name="theme-color" content="#0d1117" />
+		<meta name="color-scheme" content="dark" />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="awaae001" />
+		<meta property="og:locale" content="zh_CN" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:image" content={ogImage} />
+
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
+
+		<title>{title}</title>
 	</head>
 	<body>
 		<slot />
