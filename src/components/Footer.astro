@@ -1,11 +1,18 @@
 ---
 const startYear = 2023;
 const currentYear = new Date().getFullYear();
-const copyrightYear = currentYear > startYear ? `${startYear}-${currentYear}` : startYear;
+const copyrightYear =
+    currentYear > startYear ? `${startYear}-${currentYear}` : startYear;
 const author = "awaae001";
 ---
 
-<div class="absolute bottom-4 right-4 text-sm text-gray-400 text-right">
-    <a href="https://github.com/awaae001" target="_blank">Github</a> · powered by <a href="https://astro.build/" target="_blank" class="hover:text-white transition-colors">Astro</a> · theme with <a href="https://github.com/awaae001/" target="_blank" class="hover:text-white transition-colors">NeoSky</a><br/>
-    &copy; {copyrightYear} {author} All rights reserved.
+<div class="fixed bottom-4 right-4 text-sm text-gray-400 text-right z-20">
+    <a href="https://github.com/awaae001" target="_blank" class="hover:text-white transition-colors">Github</a> · powered by
+    <a
+        href="https://astro.build/"
+        target="_blank"
+        class="hover:text-white transition-colors">Astro</a
+    > · theme with NeoSky <br />
+    &copy; {copyrightYear}
+    {author} All rights reserved.
 </div>

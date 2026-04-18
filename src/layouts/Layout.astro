@@ -19,7 +19,7 @@ const ogImage = `${siteUrl}/favicon.svg`;
 ---
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" transition:animate="fade">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -46,6 +46,7 @@ const ogImage = `${siteUrl}/favicon.svg`;
 		<meta name="twitter:image" content={ogImage} />
 
 		<title>{title}</title>
+		<meta name="view-transition" content="same-origin" />
 	</head>
 	<body>
 		<slot />

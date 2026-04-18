@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@iconify-json/mdi": "^1.2.3",
-    "@tailwindcss/vite": "^4.1.18",
-    "astro": "^5.16.7",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/three": "^0.184.0",
+    "astro": "^6.1.8",
     "astro-icon": "^1.1.5",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.2.2",
+    "three": "^0.184.0"
   }
 }
