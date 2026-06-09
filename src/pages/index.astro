@@ -1,10 +1,68 @@
 ---
 import Welcome from "./Welcome.astro";
 import Layout from "../layouts/Layout.astro";
-import Footer from "../components/Footer.astro";
+import SolarSystem from "../components/SolarSystem.astro";
 ---
 
 <Layout>
-	<Welcome />
-	<Footer />
+	<SolarSystem />
+	<div id="main-mask" class="fixed inset-0 z-10 bg-[#0d1117]/60 backdrop-blur-[2px] transition-opacity duration-500"></div>
+	<div id="main-content" class="relative z-20 flex flex-col h-screen transition-opacity duration-500">
+		<div class="grow">
+			<Welcome />
+		</div>
+	</div>
+
+	<div class="fixed top-6 right-6 z-20 flex gap-4">
+		<button
+			id="btn-reset-view"
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center gap-2"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+			重置视角
+		</button>
+		<button
+			id="btn-back"
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer"
+		>
+			← 返回
+		</button>
+	</div>
 </Layout>
+
+<script>
+	document.addEventListener('astro:page-load', () => {
+		const btnWebsite = document.getElementById('btn-website');
+		const btnBack = document.getElementById('btn-back');
+		const btnReset = document.getElementById('btn-reset-view');
+		const mainContent = document.getElementById('main-content');
+		const mainMask = document.getElementById('main-mask');
+
+		if (btnWebsite && btnBack && btnReset && mainContent && mainMask) {
+			btnWebsite.addEventListener('click', (e) => {
+				e.preventDefault();
+				mainContent.style.opacity = '0';
+				mainContent.style.pointerEvents = 'none';
+				mainMask.style.opacity = '0';
+				mainMask.style.pointerEvents = 'none';
+				
+				btnBack.style.opacity = '1';
+				btnBack.style.pointerEvents = 'auto';
+				btnReset.style.opacity = '1';
+				btnReset.style.pointerEvents = 'auto';
+			});
+
+			btnBack.addEventListener('click', () => {
+				mainContent.style.opacity = '1';
+				mainContent.style.pointerEvents = 'auto';
+				mainMask.style.opacity = '1';
+				mainMask.style.pointerEvents = 'auto';
+				
+				btnBack.style.opacity = '0';
+				btnBack.style.pointerEvents = 'none';
+				btnReset.style.opacity = '0';
+				btnReset.style.pointerEvents = 'none';
+			});
+		}
+	});
+</script>

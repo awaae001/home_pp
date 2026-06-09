@@ -1,5 +1,7 @@
 ---
+import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
+import Footer from '../components/Footer.astro';
 
 interface Props {
 	title?: string;
@@ -46,10 +48,11 @@ const ogImage = `${siteUrl}/favicon.svg`;
 		<meta name="twitter:image" content={ogImage} />
 
 		<title>{title}</title>
-		<meta name="view-transition" content="same-origin" />
+		<ClientRouter />
 	</head>
 	<body>
 		<slot />
+		<Footer />
 	</body>
 </html>
 

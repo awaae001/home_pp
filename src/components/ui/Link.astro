@@ -7,9 +7,10 @@ interface Props {
   variant?: "capsule" | "article";
   external?: boolean;
   icon?: string;
+  id?: string;
 }
 
-const { text, href, variant = "capsule", external = false, icon } = Astro.props;
+const { text, href, variant = "capsule", external = false, icon, id } = Astro.props;
 
 const baseStyles =
   "inline-flex items-center justify-center gap-2 transition-all duration-200 font-medium cursor-pointer";
@@ -24,6 +25,7 @@ const styles = `${baseStyles} ${variants[variant]}`;
 ---
 
 <a
+  id={id}
   href={href}
   class={styles}
   target={external ? "_blank" : "_self"}
