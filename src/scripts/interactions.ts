@@ -1,101 +1,126 @@
 import * as THREE from 'three';
-import type { PlanetConfig } from './planets';
+
+export interface InteractiveTarget {
+  readonly object: THREE.Object3D;
+  readonly tooltip: string;
+  readonly priority?: number;
+  readonly activate?: () => void;
+  readonly setHovered?: (hovered: boolean) => void;
+}
+
+export interface InteractionManagerOptions {
+  readonly camera: THREE.Camera;
+  readonly canvas: HTMLCanvasElement;
+  readonly targets: readonly InteractiveTarget[];
+  readonly lineThreshold?: number;
+  readonly maxDistance?: number;
+}
 
 export class InteractionManager {
-  private raycaster: THREE.Raycaster;
-  private mouse: THREE.Vector2;
-  private camera: THREE.Camera;
-  private planets: THREE.Mesh[];
-  private hoveredPlanet: THREE.Mesh | null = null;
-  private canvas: HTMLCanvasElement;
-  private tooltip: HTMLDivElement;
+  private readonly raycaster = new THREE.Raycaster();
+  private readonly pointer = new THREE.Vector2();
+  private readonly camera: THREE.Camera;
+  private readonly canvas: HTMLCanvasElement;
+  private readonly objects: THREE.Object3D[];
+  private readonly targetByObject = new Map<THREE.Object3D, InteractiveTarget>();
+  private readonly tooltip: HTMLDivElement;
+  private hoveredTarget: InteractiveTarget | null = null;
 
-  constructor(camera: THREE.Camera, planets: THREE.Mesh[], canvas: HTMLCanvasElement) {
-    this.raycaster = new THREE.Raycaster();
-    this.mouse = new THREE.Vector2();
-    this.camera = camera;
-    this.planets = planets;
-    this.canvas = canvas;
+  constructor(options: InteractionManagerOptions) {
+    this.camera = options.camera;
+    this.canvas = options.canvas;
+    this.objects = options.targets.map(({ object }) => object);
+    this.raycaster.params.Line = { threshold: options.lineThreshold ?? 1.5 };
+    this.raycaster.far = options.maxDistance ?? Infinity;
+
+    for (const target of options.targets) {
+      this.targetByObject.set(target.object, target);
+    }
 
     this.tooltip = document.createElement('div');
-    this.tooltip.style.position = 'fixed';
-    this.tooltip.style.padding = '8px 12px';
-    this.tooltip.style.background = 'rgba(0, 0, 0, 0.8)';
-    this.tooltip.style.color = 'white';
-    this.tooltip.style.borderRadius = '6px';
-    this.tooltip.style.fontSize = '14px';
-    this.tooltip.style.pointerEvents = 'none';
-    this.tooltip.style.zIndex = '1000';
-    this.tooltip.style.display = 'none';
-    this.tooltip.style.backdropFilter = 'blur(4px)';
-    this.tooltip.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+    this.tooltip.className = 'solar-tooltip';
+    this.tooltip.hidden = true;
     document.body.appendChild(this.tooltip);
 
-    this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
-    this.canvas.addEventListener('click', this.onClick.bind(this));
+    this.canvas.addEventListener('pointermove', this.onPointerMove);
+    this.canvas.addEventListener('pointerleave', this.onPointerLeave);
+    this.canvas.addEventListener('click', this.onClick);
   }
 
-  private onMouseMove(event: MouseEvent) {
-    const rect = this.canvas.getBoundingClientRect();
-    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  public dispose(): void {
+    this.resetHover();
+    this.canvas.removeEventListener('pointermove', this.onPointerMove);
+    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
+    this.canvas.removeEventListener('click', this.onClick);
+    this.tooltip.remove();
+  }
 
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.planets);
+  private readonly onPointerMove = (event: PointerEvent): void => {
+    const target = this.pickTarget(event);
 
-    if (intersects.length > 0) {
-      const planet = intersects[0].object as THREE.Mesh;
-      if (this.hoveredPlanet !== planet) {
-        this.resetHover();
-        this.hoveredPlanet = planet;
-        planet.scale.setScalar(1.2);
+    if (target !== this.hoveredTarget) {
+      this.resetHover();
+      this.hoveredTarget = target;
+
+      if (target) {
+        target.setHovered?.(true);
         this.canvas.style.cursor = 'pointer';
-
-        const config = planet.userData.config as PlanetConfig;
-        this.tooltip.textContent = `${config.name} - ${config.url}`;
-        this.tooltip.style.display = 'block';
+        this.tooltip.textContent = target.tooltip;
+        this.tooltip.hidden = false;
       }
+    }
 
+    if (target) {
       this.tooltip.style.left = `${event.clientX + 15}px`;
       this.tooltip.style.top = `${event.clientY + 15}px`;
-    } else {
-      this.resetHover();
     }
-  }
+  };
 
-  private onClick(event: MouseEvent) {
+  private readonly onPointerLeave = (): void => {
+    this.resetHover();
+  };
+
+  private readonly onClick = (event: MouseEvent): void => {
+    this.pickTarget(event)?.activate?.();
+  };
+
+  private pickTarget(event: MouseEvent | PointerEvent): InteractiveTarget | null {
     const rect = this.canvas.getBoundingClientRect();
-    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    if (rect.width === 0 || rect.height === 0) {
+      return null;
+    }
 
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.planets);
+    this.pointer.set(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(this.pointer, this.camera);
 
-    if (intersects.length > 0) {
-      const planet = intersects[0].object as THREE.Mesh;
-      const config = planet.userData.config as PlanetConfig;
-      if (config.external) {
-        window.open(config.url, '_blank');
-      } else {
-        window.location.href = config.url;
+    const intersections = this.raycaster.intersectObjects(this.objects, true);
+
+    let selected: InteractiveTarget | null = null;
+
+    for (const intersection of intersections) {
+      let object: THREE.Object3D | null = intersection.object;
+      while (object) {
+        const target = this.targetByObject.get(object);
+        if (target) {
+          if (!selected || (target.priority ?? 0) > (selected.priority ?? 0)) {
+            selected = target;
+          }
+          break;
+        }
+        object = object.parent;
       }
     }
+
+    return selected;
   }
 
-  private resetHover() {
-    if (this.hoveredPlanet) {
-      this.hoveredPlanet.scale.setScalar(1);
-      this.hoveredPlanet = null;
-      this.canvas.style.cursor = 'default';
-      this.tooltip.style.display = 'none';
-    }
-  }
-
-  public dispose() {
-    this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
-    this.canvas.removeEventListener('click', this.onClick.bind(this));
-    if (this.tooltip.parentNode) {
-      this.tooltip.parentNode.removeChild(this.tooltip);
-    }
+  private resetHover(): void {
+    this.hoveredTarget?.setHovered?.(false);
+    this.hoveredTarget = null;
+    this.canvas.style.cursor = '';
+    this.tooltip.hidden = true;
   }
 }

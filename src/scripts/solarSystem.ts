@@ -1,267 +1,180 @@
+//! Solar-system composition root and browser lifecycle ownership.
+
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import {
-  AsteroidBelt,
-  planetsData,
-  createPlanet,
-  createOrbit,
-} from './planets';
-import type { PlanetConfig } from './planets';
 import { InteractionManager } from './interactions';
+import type { InteractiveTarget } from './interactions';
+import { createCelestialObjects } from './solar-system/celestialObjects';
+import { createSceneContext } from './solar-system/scene';
+import { createVoyagerController } from './solar-system/voyager';
 
-// ─── Helpers ────────────────────────────────────────────────
+export type Dispose = () => void;
 
-function createSphere(radius: number, color: number, pos: THREE.Vector3): THREE.Mesh {
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(radius, 32, 32),
-    new THREE.MeshBasicMaterial({ color }),
-  );
-  mesh.position.copy(pos);
-  return mesh;
+type CameraMode =
+  | { readonly kind: 'free' }
+  | { readonly kind: 'tracking-voyager' }
+  | { readonly kind: 'resetting'; readonly target: THREE.Vector3 };
+
+function openPlanet(url: string, external: boolean): void {
+  if (external) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  window.location.href = url;
 }
 
-function createStarField(count: number, radius: number): THREE.Points {
-  const positions = new Float32Array(count * 3);
-  const phases = new Float32Array(count);
-  const clusters = [
-    new THREE.Vector3(radius * 0.5, radius * 0.2, -radius * 0.4),
-    new THREE.Vector3(-radius * 0.4, -radius * 0.3, radius * 0.5),
-    new THREE.Vector3(0, radius * 0.6, 0),
-  ];
+/// Initializes the solar-system scene and returns a cleanup function.
+export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
+  const context = createSceneContext(canvas);
+  const celestialObjects = createCelestialObjects(context.scene);
+  const voyager = createVoyagerController(context.scene);
+  const cameraPosition = document.getElementById('camera-position');
+  let cameraMode: CameraMode = { kind: 'free' };
+  let animationId: number | null = null;
+  let disposed = false;
 
-  for (let i = 0; i < count; i++) {
-    let r, theta, phi;
-    const isCluster = Math.random() > 0.6;
-
-    if (isCluster) {
-      const cluster = clusters[Math.floor(Math.random() * clusters.length)];
-      const spread = radius * 0.15;
-      positions[i * 3] = cluster.x + (Math.random() - 0.5) * spread;
-      positions[i * 3 + 1] = cluster.y + (Math.random() - 0.5) * spread;
-      positions[i * 3 + 2] = cluster.z + (Math.random() - 0.5) * spread;
-    } else {
-      const minR = 60;
-      r = minR + Math.random() * (radius - minR);
-      theta = Math.random() * Math.PI * 2;
-      phi = Math.acos(2 * Math.random() - 1);
-      
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = r * Math.cos(phi);
-    }
-    phases[i] = Math.random() * Math.PI * 2;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
-
-  const material = new THREE.ShaderMaterial({
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    uniforms: {
-      time: { value: 0 },
-      pixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
-    },
-    vertexShader: `
-      attribute float phase;
-      uniform float time;
-      uniform float pixelRatio;
-      varying float brightness;
-
-      void main() {
-        vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
-        brightness = 0.35 + 0.65 * (0.5 + 0.5 * sin(time * 1.8 + phase));
-        gl_PointSize = 0.55 * pixelRatio * (300.0 / -viewPosition.z);
-        gl_Position = projectionMatrix * viewPosition;
-      }
-    `,
-    fragmentShader: `
-      varying float brightness;
-
-      void main() {
-        gl_FragColor = vec4(vec3(1.0), brightness);
-      }
-    `,
+  const targets: InteractiveTarget[] = celestialObjects.planets.map(({ mesh, config }) => {
+    const originalScale = mesh.scale.clone();
+    return {
+      object: mesh,
+      tooltip: `${config.name} - ${config.url}`,
+      activate: () => openPlanet(config.url, config.external),
+      setHovered: (hovered) => {
+        mesh.scale.copy(originalScale).multiplyScalar(hovered ? 1.2 : 1);
+      },
+    };
   });
 
-  return new THREE.Points(geo, material);
-}
+  targets.push({
+    object: voyager.guideLine,
+    tooltip: '航线',
+    priority: -1,
+    activate: () => {
+      cameraMode = { kind: 'tracking-voyager' };
+      context.controls.enabled = true;
+    },
+  });
+  targets.push({
+    object: voyager.model,
+    tooltip: '终于，旅行者一号看到了新世界，可惜它早已缄默 - wikipedia（点击跳转）',
+    priority: 1,
+    activate: () => {
+      window.open(
+        'https://zh.wikipedia.org/wiki/%E6%97%85%E8%A1%8C%E8%80%851%E5%8F%B7',
+        '_blank',
+        'noopener,noreferrer',
+      );
+    },
+  });
 
-export function initSolarSystem(canvas: HTMLCanvasElement) {
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 14, 22);
-  camera.lookAt(0, 0, 0);
+  const interactions = new InteractionManager({
+    camera: context.camera,
+    canvas,
+    targets,
+    lineThreshold: 0.4,
+    maxDistance: 50,
+  });
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-  const controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.minDistance = 5;
-  controls.maxDistance = 40;
-  controls.maxPolarAngle = Math.PI / 2 + 0.5;
-  controls.target.set(0, 0, 0);
-
-  let isExploring = false;
-  const defaultPos = new THREE.Vector3(0, 14, 22);
-  const initialPos = new THREE.Vector3(0, 14, 22); 
-  const initialTarget = new THREE.Vector3(-10, 8, 0);
-  const centerTarget = new THREE.Vector3(0, 0, 0);
-
-  if (window.innerWidth >= 768) {
-    camera.position.copy(initialPos);
-    camera.lookAt(initialTarget);
-    controls.target.copy(initialTarget);
-  } else {
-    camera.position.copy(defaultPos);
-    camera.lookAt(centerTarget);
-    controls.target.copy(centerTarget);
-  }
-  controls.update();
-
-  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-  scene.add(new THREE.PointLight(0xFDB813, 2, 50));
-  const sun = createSphere(1.5, 0xFDB813, new THREE.Vector3(0, 0, 0));
-
-  scene.add(sun);
-  const starCount = window.innerWidth < 768 ? 5000 : 12000;
-  const stars = createStarField(starCount, 800);
-
-  scene.add(stars);
-
-  const planets: THREE.Mesh[] = [];
-  const asteroidBelts: AsteroidBelt[] = [];
-  const planetData: Array<{
-    mesh: THREE.Mesh;
-    angle: number;
-    config: PlanetConfig;
-    retrograde: boolean;
-    orbitRotation: THREE.Euler;
-  }> = [];
-
-  planetsData.forEach((config) => {
-    if (config.kind === 'asteroid-belt') {
-      const belt = new AsteroidBelt(config);
-      scene.add(belt.object);
-      asteroidBelts.push(belt);
+  const updateCameraPosition = (): void => {
+    if (!cameraPosition) {
       return;
     }
+    const { x, y, z } = context.camera.position;
+    cameraPosition.textContent = `X ${x.toFixed(2)}  Y ${y.toFixed(2)}  Z ${z.toFixed(2)}`;
+  };
 
-    const planet = createPlanet(config);
+  const resetView = (): void => {
+    cameraMode = {
+      kind: 'resetting',
+      target: context.defaultTarget().clone(),
+    };
+    context.controls.enabled = false;
+  };
 
-    scene.add(createOrbit(config.orbitRadius, config.orbitRotation));
-    scene.add(planet);
-    planets.push(planet);
-    planetData.push({
-      mesh: planet,
-      angle: Math.random() * Math.PI * 2,
-      config,
-      retrograde: Math.random() < 0.25,
-      orbitRotation: new THREE.Euler(...config.orbitRotation),
-    });
-  });
-
-  const interactionManager = new InteractionManager(camera, planets, canvas);
-  const btnReset = document.getElementById('btn-reset-view');
-  const btnWebsite = document.getElementById('btn-website');
-  const btnBack = document.getElementById('btn-back');
-
-  let isResetting = false;
-  const targetPos = new THREE.Vector3(0, 14, 22);
-  const targetLook = new THREE.Vector3(0, 0, 0);
-
-  if (btnReset) {
-    btnReset.addEventListener('click', () => {
-      isResetting = true;
-      controls.enabled = false;
-    });
-  }
-
-  if (btnWebsite) {
-    btnWebsite.addEventListener('click', () => {
-      isExploring = true;
-    });
-  }
-
-  if (btnBack) {
-    btnBack.addEventListener('click', () => {
-      isExploring = false;
-    });
-  }
-
-  const rigidRotators: Array<{ obj: THREE.Object3D; speed: number }> = [
-    { obj: sun, speed: 0.001 },
-    { obj: stars, speed: 0.00007 },
-  ];
+  const onControlsStart = (): void => {
+    cameraMode = { kind: 'free' };
+  };
 
   const timer = new THREE.Timer();
   timer.connect(document);
-  let animationId: number;
-  const animate = (timestamp?: number) => {
-    animationId = requestAnimationFrame(animate);
+
+  const frame = (timestamp: number): void => {
+    if (disposed) {
+      return;
+    }
+
     timer.update(timestamp);
     const delta = Math.min(timer.getDelta(), 0.1);
     const elapsed = timer.getElapsed();
 
-    for (const { obj, speed } of rigidRotators) {
-      obj.rotation.y += speed;
-    }
+    celestialObjects.update(elapsed, delta);
+    voyager.update(
+      elapsed,
+      cameraMode.kind === 'tracking-voyager',
+      context.camera,
+      context.controls,
+    );
 
-    asteroidBelts.forEach((belt) => belt.update(elapsed, delta));
-    (stars.material as THREE.ShaderMaterial).uniforms.time.value = elapsed;
+    if (cameraMode.kind === 'resetting') {
+      context.camera.position.lerp(context.defaultPosition, 0.08);
+      context.controls.target.lerp(cameraMode.target, 0.08);
 
-    for (const data of planetData) {
-      data.angle += data.config.orbitSpeed * (data.retrograde ? -1 : 1);
-      data.mesh.position.set(
-        Math.cos(data.angle) * data.config.orbitRadius,
-        0,
-        Math.sin(data.angle) * data.config.orbitRadius,
-      );
-      data.mesh.position.applyEuler(data.orbitRotation);
-      data.mesh.rotation.y += 0.01;
-    }
-
-    if (isResetting) {
-      camera.position.lerp(defaultPos, 0.08);
-      controls.target.lerp(centerTarget, 0.08);
-      if (camera.position.distanceTo(defaultPos) < 0.1) {
-        isResetting = false;
-        controls.enabled = true;
+      if (
+        context.camera.position.distanceTo(context.defaultPosition) < 0.1
+        && context.controls.target.distanceTo(cameraMode.target) < 0.1
+      ) {
+        context.camera.position.copy(context.defaultPosition);
+        context.controls.target.copy(cameraMode.target);
+        context.controls.enabled = true;
+        cameraMode = { kind: 'free' };
       }
     }
 
-    controls.update();
-    renderer.render(scene, camera);
+    context.controls.update();
+    updateCameraPosition();
+    context.renderer.render(context.scene, context.camera);
+    animationId = requestAnimationFrame(frame);
   };
 
-  const handleResize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  };
-  window.addEventListener('resize', handleResize);
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      cancelAnimationFrame(animationId);
-    } else {
-      animate();
+  const startAnimation = (): void => {
+    if (!disposed && animationId === null) {
+      animationId = requestAnimationFrame(frame);
     }
-  });
+  };
 
-  animate();
+  const stopAnimation = (): void => {
+    if (animationId !== null) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+  };
 
-  // ── Cleanup ──
+  const onVisibilityChange = (): void => {
+    if (document.hidden) {
+      stopAnimation();
+      return;
+    }
+    startAnimation();
+  };
+
+  const resetButton = document.getElementById('btn-reset-view');
+  resetButton?.addEventListener('click', resetView);
+  context.controls.addEventListener('start', onControlsStart);
+  window.addEventListener('resize', context.resize);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  updateCameraPosition();
+  startAnimation();
+
   return () => {
-    cancelAnimationFrame(animationId);
-    window.removeEventListener('resize', handleResize);
-    controls.dispose();
-    interactionManager.dispose();
+    disposed = true;
+    stopAnimation();
+    resetButton?.removeEventListener('click', resetView);
+    context.controls.removeEventListener('start', onControlsStart);
+    window.removeEventListener('resize', context.resize);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    interactions.dispose();
+    voyager.dispose();
+    celestialObjects.dispose();
     timer.dispose();
-    renderer.dispose();
+    context.dispose();
   };
 }
