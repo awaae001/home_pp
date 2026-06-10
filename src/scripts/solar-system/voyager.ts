@@ -21,12 +21,37 @@ export interface VoyagerController {
 }
 
 function createFlightPoints(): readonly [THREE.Vector3, THREE.Vector3] {
-  const startAngle = Math.random() * Math.PI * 2;
-  const endAngle = startAngle + Math.PI + (Math.random() - 0.5) * (Math.PI / 2);
-  return [
-    new THREE.Vector3(Math.cos(startAngle) * FLIGHT_RADIUS, 20, Math.sin(startAngle) * FLIGHT_RADIUS),
-    new THREE.Vector3(Math.cos(endAngle) * FLIGHT_RADIUS, 5, Math.sin(endAngle) * FLIGHT_RADIUS),
-  ];
+  const start = new THREE.Vector3();
+  const theta1 = Math.random() * Math.PI * 2;
+  const phi1 = (Math.random() - 0.5) * Math.PI; // Full sphere
+  start.set(
+    Math.cos(theta1) * Math.cos(phi1) * FLIGHT_RADIUS,
+    Math.sin(phi1) * FLIGHT_RADIUS,
+    Math.sin(theta1) * Math.cos(phi1) * FLIGHT_RADIUS
+  );
+
+  let end = new THREE.Vector3();
+  while (true) {
+    const theta2 = Math.random() * Math.PI * 2;
+    const phi2 = (Math.random() - 0.5) * Math.PI;
+    end.set(
+      Math.cos(theta2) * Math.cos(phi2) * FLIGHT_RADIUS,
+      Math.sin(phi2) * FLIGHT_RADIUS,
+      Math.sin(theta2) * Math.cos(phi2) * FLIGHT_RADIUS
+    );
+
+    const lineDir = new THREE.Vector3().subVectors(end, start);
+    const length = lineDir.length();
+    if (length > 0) {
+      const cross = new THREE.Vector3().crossVectors(start, end);
+      const dist = cross.length() / length;
+      if (dist > 10) {
+        break;
+      }
+    }
+  }
+
+  return [start, end];
 }
 
 export function createVoyagerController(scene: THREE.Scene): VoyagerController {

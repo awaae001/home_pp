@@ -10,26 +10,31 @@
 <div class="fixed inset-0 z-5 bg-linear-to-b from-transparent via-[#0d1117]/50 to-[#0d1117]/80 pointer-events-none"></div>
 
 <script>
-  import { initSolarSystem } from '../scripts/solarSystem';
-
   let cleanup: (() => void) | undefined;
+  let loadGeneration = 0;
 
-  document.addEventListener('astro:page-load', () => {
-    if (cleanup) {
-      cleanup();
-      cleanup = undefined;
-    }
+  document.addEventListener('astro:page-load', async () => {
+    cleanup?.();
+    cleanup = undefined;
+
+    const generation = ++loadGeneration;
     const canvas = document.getElementById('solar-canvas') as HTMLCanvasElement;
-    if (canvas) {
-      cleanup = initSolarSystem(canvas);
+    if (!canvas) {
+      return;
     }
+
+    const { initSolarSystem } = await import('../scripts/solarSystem');
+    if (generation !== loadGeneration || !canvas.isConnected) {
+      return;
+    }
+
+    cleanup = initSolarSystem(canvas);
   });
 
   document.addEventListener('astro:before-swap', () => {
-    if (cleanup) {
-      cleanup();
-      cleanup = undefined;
-    }
+    loadGeneration += 1;
+    cleanup?.();
+    cleanup = undefined;
   });
 </script>
 
