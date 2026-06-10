@@ -107,7 +107,7 @@ export function createCelestialObjects(scene: THREE.Scene): CelestialObjects {
   const orbitingPlanets: OrbitingPlanet[] = [];
 
   root.add(new THREE.AmbientLight(0xffffff, 0.3));
-  root.add(new THREE.PointLight(0xfdb813, 30, 50));
+  root.add(new THREE.PointLight(0xfdb813, 60, 100));
   root.add(sun, stars);
 
   for (const config of planetsData) {

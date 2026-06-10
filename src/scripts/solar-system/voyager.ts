@@ -34,7 +34,7 @@ export function createVoyagerController(scene: THREE.Scene): VoyagerController {
   const model = new THREE.Group();
   const [start, end] = createFlightPoints();
   const direction = new THREE.Vector3().subVectors(end, start).normalize();
-  const cameraOffset = direction.clone().multiplyScalar(-15).add(new THREE.Vector3(0, 8, 0));
+  const cameraOffset = direction.clone().multiplyScalar(-5).add(new THREE.Vector3(0, 4, 0));
   const cameraTarget = new THREE.Vector3();
   let voyager: THREE.Object3D | null = null;
   let disposed = false;
