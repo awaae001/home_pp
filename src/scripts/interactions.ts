@@ -16,13 +16,13 @@ export interface InteractionManagerOptions {
   readonly maxDistance?: number;
 }
 
-export class InteractionManager {
+export class InteractionManager implements EventListenerObject {
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly camera: THREE.Camera;
   private readonly canvas: HTMLCanvasElement;
   private readonly objects: THREE.Object3D[];
-  private readonly targetByObject = new Map<THREE.Object3D, InteractiveTarget>();
+  private readonly targetByObject: Map<THREE.Object3D, InteractiveTarget>;
   private readonly tooltip: HTMLDivElement;
   private hoveredTarget: InteractiveTarget | null = null;
 
@@ -30,33 +30,41 @@ export class InteractionManager {
     this.camera = options.camera;
     this.canvas = options.canvas;
     this.objects = options.targets.map(({ object }) => object);
+    this.targetByObject = new Map(options.targets.map((target) => [target.object, target]));
     this.raycaster.params.Line = { threshold: options.lineThreshold ?? 1.5 };
     this.raycaster.far = options.maxDistance ?? Infinity;
-
-    for (const target of options.targets) {
-      this.targetByObject.set(target.object, target);
-    }
 
     this.tooltip = document.createElement('div');
     this.tooltip.className = 'solar-tooltip';
     this.tooltip.hidden = true;
     document.body.appendChild(this.tooltip);
 
-    this.canvas.addEventListener('pointermove', this.onPointerMove);
-    this.canvas.addEventListener('pointerleave', this.onPointerLeave);
-    this.canvas.addEventListener('click', this.onClick);
+    this.canvas.addEventListener('pointermove', this);
+    this.canvas.addEventListener('pointerleave', this);
+    this.canvas.addEventListener('click', this);
   }
 
   public dispose(): void {
     this.resetHover();
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave);
-    this.canvas.removeEventListener('click', this.onClick);
+    this.canvas.removeEventListener('pointermove', this);
+    this.canvas.removeEventListener('pointerleave', this);
+    this.canvas.removeEventListener('click', this);
     this.tooltip.remove();
   }
 
-  private readonly onPointerMove = (event: PointerEvent): void => {
-    const target = this.pickTarget(event);
+  public handleEvent(event: Event): void {
+    if (event.type === 'pointerleave') {
+      this.resetHover();
+      return;
+    }
+
+    const pointerEvent = event as MouseEvent;
+    const target = this.pickTarget(pointerEvent);
+
+    if (event.type === 'click') {
+      target?.activate?.();
+      return;
+    }
 
     if (target !== this.hoveredTarget) {
       this.resetHover();
@@ -71,18 +79,10 @@ export class InteractionManager {
     }
 
     if (target) {
-      this.tooltip.style.left = `${event.clientX + 15}px`;
-      this.tooltip.style.top = `${event.clientY + 15}px`;
+      this.tooltip.style.left = `${pointerEvent.clientX + 15}px`;
+      this.tooltip.style.top = `${pointerEvent.clientY + 15}px`;
     }
-  };
-
-  private readonly onPointerLeave = (): void => {
-    this.resetHover();
-  };
-
-  private readonly onClick = (event: MouseEvent): void => {
-    this.pickTarget(event)?.activate?.();
-  };
+  }
 
   private pickTarget(event: MouseEvent | PointerEvent): InteractiveTarget | null {
     const rect = this.canvas.getBoundingClientRect();

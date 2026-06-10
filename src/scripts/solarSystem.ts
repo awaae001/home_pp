@@ -1,5 +1,3 @@
-//! Solar-system composition root and browser lifecycle ownership.
-
 import * as THREE from 'three';
 import { InteractionManager } from './interactions';
 import type { InteractiveTarget } from './interactions';
@@ -22,7 +20,6 @@ function openPlanet(url: string, external: boolean): void {
   window.location.href = url;
 }
 
-/// Initializes the solar-system scene and returns a cleanup function.
 export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
   const context = createSceneContext(canvas);
   const celestialObjects = createCelestialObjects(context.scene);
@@ -55,7 +52,7 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
   });
   targets.push({
     object: voyager.model,
-    tooltip: '终于，旅行者一号看到了新世界，可惜它早已缄默 - wikipedia（点击跳转）',
+    tooltip: '终于，旅行者一号看到了新世界，可惜它早已缄默。',
     priority: 1,
     activate: () => {
       window.open(
@@ -74,14 +71,6 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
     maxDistance: 50,
   });
 
-  const updateCameraPosition = (): void => {
-    if (!cameraPosition) {
-      return;
-    }
-    const { x, y, z } = context.camera.position;
-    cameraPosition.textContent = `X ${x.toFixed(2)}  Y ${y.toFixed(2)}  Z ${z.toFixed(2)}`;
-  };
-
   const resetView = (): void => {
     cameraMode = {
       kind: 'resetting',
@@ -90,7 +79,7 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
     context.controls.enabled = false;
   };
 
-  const onControlsStart = (): void => {
+  const stopVoyagerTracking = (): void => {
     cameraMode = { kind: 'free' };
   };
 
@@ -130,47 +119,43 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
     }
 
     context.controls.update();
-    updateCameraPosition();
+    if (cameraPosition) {
+      const { x, y, z } = context.camera.position;
+      cameraPosition.textContent = `X ${x.toFixed(2)}  Y ${y.toFixed(2)}  Z ${z.toFixed(2)}`;
+    }
     context.renderer.render(context.scene, context.camera);
     animationId = requestAnimationFrame(frame);
   };
 
-  const startAnimation = (): void => {
-    if (!disposed && animationId === null) {
+  const syncAnimation = (): void => {
+    if (disposed || document.hidden) {
+      if (animationId === null) {
+        return;
+      }
+      cancelAnimationFrame(animationId);
+      animationId = null;
+      return;
+    }
+
+    if (animationId === null) {
       animationId = requestAnimationFrame(frame);
     }
   };
 
-  const stopAnimation = (): void => {
-    if (animationId !== null) {
-      cancelAnimationFrame(animationId);
-      animationId = null;
-    }
-  };
-
-  const onVisibilityChange = (): void => {
-    if (document.hidden) {
-      stopAnimation();
-      return;
-    }
-    startAnimation();
-  };
-
   const resetButton = document.getElementById('btn-reset-view');
   resetButton?.addEventListener('click', resetView);
-  context.controls.addEventListener('start', onControlsStart);
+  context.controls.addEventListener('start', stopVoyagerTracking);
   window.addEventListener('resize', context.resize);
-  document.addEventListener('visibilitychange', onVisibilityChange);
-  updateCameraPosition();
-  startAnimation();
+  document.addEventListener('visibilitychange', syncAnimation);
+  syncAnimation();
 
   return () => {
     disposed = true;
-    stopAnimation();
+    syncAnimation();
     resetButton?.removeEventListener('click', resetView);
-    context.controls.removeEventListener('start', onControlsStart);
+    context.controls.removeEventListener('start', stopVoyagerTracking);
     window.removeEventListener('resize', context.resize);
-    document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.removeEventListener('visibilitychange', syncAnimation);
     interactions.dispose();
     voyager.dispose();
     celestialObjects.dispose();

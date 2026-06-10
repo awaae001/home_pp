@@ -98,7 +98,6 @@ function createStarField(count: number, radius: number): THREE.Points {
   return new THREE.Points(geometry, material);
 }
 
-/// Adds celestial objects to a scene and returns their update owner.
 export function createCelestialObjects(scene: THREE.Scene): CelestialObjects {
   const root = new THREE.Group();
   const sun = createSun();
