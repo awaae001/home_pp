@@ -25,8 +25,12 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
   const celestialObjects = createCelestialObjects(context.scene);
   const voyager = createVoyagerController(context.scene);
   const cameraPosition = document.getElementById('camera-position');
+  const mainMask = document.getElementById('main-mask');
   let cameraMode: CameraMode = { kind: 'free' };
   let animationId: number | null = null;
+  let nextBackgroundFrameAt = performance.now();
+  let statsStartedAt = performance.now();
+  let renderedFrames = 0;
   let disposed = false;
 
   const targets: InteractiveTarget[] = celestialObjects.planets.map(({ mesh, config }) => {
@@ -90,6 +94,20 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
     if (disposed) {
       return;
     }
+    animationId = requestAnimationFrame(frame);
+
+    const isCovered = mainMask !== null && mainMask.style.pointerEvents !== 'none';
+    if (isCovered) {
+      const frameInterval = 1000 / 24;
+      if (timestamp < nextBackgroundFrameAt) {
+        return;
+      }
+      do {
+        nextBackgroundFrameAt += frameInterval;
+      } while (nextBackgroundFrameAt <= timestamp);
+    } else {
+      nextBackgroundFrameAt = timestamp;
+    }
 
     timer.update(timestamp);
     const delta = Math.min(timer.getDelta(), 0.1);
@@ -119,12 +137,23 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
     }
 
     context.controls.update();
-    if (cameraPosition) {
-      const { x, y, z } = context.camera.position;
-      cameraPosition.textContent = `X ${x.toFixed(2)}  Y ${y.toFixed(2)}  Z ${z.toFixed(2)}`;
+    renderedFrames += 1;
+    const statsDuration = timestamp - statsStartedAt;
+    if (statsDuration >= 500) {
+      if (cameraPosition) {
+        const { x, y, z } = context.camera.position;
+        const fps = Math.round((renderedFrames * 1000) / statsDuration);
+        cameraPosition.textContent = [
+          `X ${x.toFixed(2)}`,
+          `Y ${y.toFixed(2)}`,
+          `Z ${z.toFixed(2)}`,
+          `FPS ${fps}`,
+        ].join('  ');
+      }
+      statsStartedAt = timestamp;
+      renderedFrames = 0;
     }
     context.renderer.render(context.scene, context.camera);
-    animationId = requestAnimationFrame(frame);
   };
 
   const syncAnimation = (): void => {
@@ -138,6 +167,9 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
     }
 
     if (animationId === null) {
+      statsStartedAt = performance.now();
+      nextBackgroundFrameAt = statsStartedAt;
+      renderedFrames = 0;
       animationId = requestAnimationFrame(frame);
     }
   };

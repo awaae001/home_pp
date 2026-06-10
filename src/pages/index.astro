@@ -1,7 +1,8 @@
 ---
-import Welcome from "./Welcome.astro";
 import Layout from "../layouts/Layout.astro";
 import SolarSystem from "../components/SolarSystem.astro";
+import Link from '../components/ui/Link.astro';
+import { Icon } from "astro-icon/components";
 ---
 
 <Layout>
@@ -9,7 +10,40 @@ import SolarSystem from "../components/SolarSystem.astro";
 	<div id="main-mask" class="fixed inset-0 z-10 bg-[#0d1117]/60 backdrop-blur-[2px] transition-opacity duration-500"></div>
 	<div id="main-content" class="relative z-20 flex flex-col h-screen transition-opacity duration-500">
 		<div class="grow">
-			<Welcome />
+			<div class="relative w-full h-full overflow-hidden font-sans">
+				<main class="flex flex-col items-center justify-center h-full px-4 text-right">
+					<section class="space-y-8">
+						<h1 class="text-1xl md:text-5xl font-bold text-white tracking-tight animate-fade-in">
+							👋你好，我是 awaae001
+						</h1>
+						<p class="text-base md:text-lg text-gray-300 animate-fade-in opacity-0" style="animation-delay: 0.15s; animation-fill-mode: forwards;">
+							新时代，最重要的不再是知识，而是判断，还有审美
+						</p>
+						
+						<div class="flex flex-wrap items-center justify-end gap-4 animate-fade-in-up">
+							<Link 
+								text="Blog" 
+								href="https://blog.awaae001.top" 
+								icon="mdi:pen"
+								variant="capsule" 
+								external={true}
+							/>
+							<Link 
+								id="btn-website"
+								text="星图" 
+								href="#" 
+								icon="mdi:web" 
+								variant="article" 
+							/>
+							<Link 
+								text="关于" 
+								href="/about" 
+								variant="article" 
+							/>
+						</div>
+					</section>
+				</main>
+			</div>
 		</div>
 	</div>
 
@@ -18,17 +52,39 @@ import SolarSystem from "../components/SolarSystem.astro";
 			id="btn-reset-view"
 			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center gap-2"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+			<Icon name="mdi:refresh" class="w-4 h-4" />
 			重置视角
 		</button>
 		<button
 			id="btn-back"
-			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer"
+			title="返回"
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center justify-center"
 		>
-			← 返回
+			<Icon name="mdi:arrow-left" class="w-4 h-4" />
 		</button>
 	</div>
 </Layout>
+
+<style>
+	@keyframes fadeIn {
+		from { opacity: 0; transform: translateY(-10px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+	
+	@keyframes fadeInUp {
+		from { opacity: 0; transform: translateY(10px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	.animate-fade-in {
+		animation: fadeIn 0.8s ease-out forwards;
+	}
+
+	.animate-fade-in-up {
+		animation: fadeInUp 0.8s ease-out 0.3s forwards;
+		opacity: 0;
+	}
+</style>
 
 <script>
 	document.addEventListener('astro:page-load', () => {
