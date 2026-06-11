@@ -11,6 +11,7 @@ const DISH_AXIS = new THREE.Vector3(0, 1, 0);
 export interface VoyagerController {
   readonly guideLine: THREE.Line;
   readonly model: THREE.Object3D;
+  readonly ready: Promise<void>;
   readonly update: (
     elapsed: number,
     tracking: boolean,
@@ -74,9 +75,9 @@ export function createVoyagerController(scene: THREE.Scene): VoyagerController {
   );
   scene.add(root);
 
-  new GLTFLoader().load(
-    '/models/Voyager.glb',
-    (gltf) => {
+  const ready = new GLTFLoader()
+    .loadAsync('/models/Voyager.glb')
+    .then((gltf) => {
       if (disposed) {
         disposeObject(gltf.scene);
         return;
@@ -86,18 +87,17 @@ export function createVoyagerController(scene: THREE.Scene): VoyagerController {
       voyager.position.copy(start);
       voyager.quaternion.setFromUnitVectors(DISH_AXIS, direction.clone().negate());
       model.add(voyager);
-    },
-    undefined,
-    (error) => {
+    })
+    .catch((error: unknown) => {
       if (!disposed) {
         console.error('Error loading Voyager.glb:', error);
       }
-    },
-  );
+    });
 
   return {
     guideLine,
     model,
+    ready,
     update: (elapsed, tracking, camera, controls) => {
       if (!voyager) {
         return;

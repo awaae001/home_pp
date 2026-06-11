@@ -6,6 +6,10 @@
   <canvas id="solar-canvas"></canvas>
   <output id="camera-position" aria-live="polite"></output>
 </div>
+<div id="solar-loader" role="status" aria-live="polite">
+  <span class="loader-mark" aria-hidden="true"></span>
+  <span id="solar-loader-text">正在下载 Three.js 环境……</span>
+</div>
 
 <script>
   let cleanup: (() => void) | undefined;
@@ -17,16 +21,39 @@
 
     const generation = ++loadGeneration;
     const canvas = document.getElementById('solar-canvas') as HTMLCanvasElement;
+    const loader = document.getElementById('solar-loader');
+    const loaderText = document.getElementById('solar-loader-text');
     if (!canvas) {
       return;
     }
 
+    loaderText && (loaderText.textContent = '正在下载 Three.js 环境');
     const { initSolarSystem } = await import('../scripts/solarSystem');
     if (generation !== loadGeneration || !canvas.isConnected) {
       return;
     }
 
-    cleanup = initSolarSystem(canvas);
+    const stageLabels = {
+      model: '正在下载模型……',
+      shaders: '正在编译着色器……',
+      ready: '加载完成……',
+    } as const;
+    const dispose = await initSolarSystem(canvas, {
+      onLoadStage: (stage) => {
+        if (generation === loadGeneration && loaderText) {
+          loaderText.textContent = stageLabels[stage];
+        }
+      },
+    });
+
+    if (generation !== loadGeneration || !canvas.isConnected) {
+      dispose();
+      return;
+    }
+
+    cleanup = dispose;
+    canvas.classList.add('is-ready');
+    loader?.classList.add('is-complete');
   });
 
   document.addEventListener('astro:before-swap', () => {
@@ -76,6 +103,48 @@
     display: block;
     width: 100%;
     height: 100%;
+    opacity: 0;
+    transition: opacity 1200ms var(--motion-ease);
+  }
+
+  #solar-canvas.is-ready {
+    opacity: 1;
+  }
+
+  #solar-loader {
+    position: fixed;
+    z-index: 30;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: rgb(255 255 255 / 62%);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    transition: opacity 600ms var(--motion-ease);
+    pointer-events: none;
+  }
+
+  #solar-loader.is-complete {
+    opacity: 0;
+    transition-delay: 500ms;
+  }
+
+  .loader-mark {
+    width: 0.38rem;
+    height: 0.38rem;
+    background: currentColor;
+    border-radius: 50%;
+    animation: loader-pulse 1200ms ease-in-out infinite;
+  }
+
+  @keyframes loader-pulse {
+    50% {
+      opacity: 0.25;
+      transform: scale(0.7);
+    }
   }
 
   #camera-position {

@@ -7,6 +7,12 @@ import { createVoyagerController } from './solar-system/voyager';
 
 export type Dispose = () => void;
 
+export type SolarSystemLoadStage = 'model' | 'shaders' | 'ready';
+
+export interface SolarSystemOptions {
+  readonly onLoadStage?: (stage: SolarSystemLoadStage) => void;
+}
+
 type CameraMode =
   | { readonly kind: 'free' }
   | { readonly kind: 'tracking-voyager' }
@@ -20,7 +26,10 @@ function openPlanet(url: string, external: boolean): void {
   window.location.href = url;
 }
 
-export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
+export async function initSolarSystem(
+  canvas: HTMLCanvasElement,
+  options: SolarSystemOptions = {},
+): Promise<Dispose> {
   const context = createSceneContext(canvas);
   const celestialObjects = createCelestialObjects(context.scene);
   const voyager = createVoyagerController(context.scene);
@@ -179,6 +188,12 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
   context.controls.addEventListener('start', stopVoyagerTracking);
   window.addEventListener('resize', context.resize);
   document.addEventListener('visibilitychange', syncAnimation);
+
+  options.onLoadStage?.('model');
+  await voyager.ready;
+  options.onLoadStage?.('shaders');
+  await context.renderer.compileAsync(context.scene, context.camera);
+  options.onLoadStage?.('ready');
   syncAnimation();
 
   return () => {
