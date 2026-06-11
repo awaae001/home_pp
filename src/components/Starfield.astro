@@ -1,0 +1,52 @@
+---
+// Mounts the site's shared deep-space background.
+---
+
+<div class="starfield" aria-hidden="true">
+  <canvas id="project-starfield"></canvas>
+</div>
+
+<script>
+  let disposeStarfield: (() => void) | undefined;
+
+  document.addEventListener("astro:page-load", async () => {
+    disposeStarfield?.();
+    const canvas = document.getElementById("project-starfield");
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return;
+    }
+
+    const { initStarfield } = await import("../scripts/starfield");
+    if (canvas.isConnected) {
+      disposeStarfield = initStarfield(canvas);
+    }
+  });
+
+  document.addEventListener("astro:before-swap", () => {
+    disposeStarfield?.();
+    disposeStarfield = undefined;
+  });
+</script>
+
+<style>
+  .starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: transparent;
+    animation: starfield-enter var(--motion-duration-slow) var(--motion-ease) both;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  @keyframes starfield-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>

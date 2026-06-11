@@ -36,6 +36,13 @@ import { Icon } from "astro-icon/components";
 								variant="article" 
 							/>
 							<Link 
+								id="btn-projects"
+								text="项目" 
+								href="/projects" 
+								icon="mdi:rocket-launch-outline"
+								variant="article" 
+							/>
+							<Link 
 								text="关于" 
 								href="/about" 
 								variant="article" 
@@ -77,18 +84,21 @@ import { Icon } from "astro-icon/components";
 	}
 
 	.animate-fade-in {
-		animation: fadeIn 0.8s ease-out forwards;
+		animation: fadeIn var(--motion-duration-slow) var(--motion-ease) forwards;
 	}
 
 	.animate-fade-in-up {
-		animation: fadeInUp 0.8s ease-out 0.3s forwards;
+		animation: fadeInUp var(--motion-duration-slow) var(--motion-ease) 240ms forwards;
 		opacity: 0;
 	}
 </style>
 
 <script>
+	import { navigate } from 'astro:transitions/client';
+
 	document.addEventListener('astro:page-load', () => {
 		const btnWebsite = document.getElementById('btn-website');
+		const btnProjects = document.getElementById('btn-projects');
 		const btnBack = document.getElementById('btn-back');
 		const btnReset = document.getElementById('btn-reset-view');
 		const mainContent = document.getElementById('main-content');
@@ -118,6 +128,21 @@ import { Icon } from "astro-icon/components";
 				btnBack.style.pointerEvents = 'none';
 				btnReset.style.opacity = '0';
 				btnReset.style.pointerEvents = 'none';
+			});
+		}
+
+		if (btnProjects && !btnProjects.dataset.transitionReady) {
+			btnProjects.dataset.transitionReady = 'true';
+			btnProjects.addEventListener('click', async (event) => {
+				event.preventDefault();
+
+				const solarSystem = document.getElementById('solar-system-container');
+				btnProjects.style.pointerEvents = 'none';
+				mainContent?.classList.add('project-transition-content');
+				solarSystem?.classList.add('project-transition-space');
+
+				await new Promise((resolve) => window.setTimeout(resolve, 720));
+				await navigate('/projects');
 			});
 		}
 	});

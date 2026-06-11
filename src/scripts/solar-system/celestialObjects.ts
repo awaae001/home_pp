@@ -7,6 +7,7 @@ import {
 } from '../planets';
 import type { PlanetConfig } from '../planets';
 import { disposeObject } from './dispose';
+import { createStarField } from './starField';
 
 interface OrbitingPlanet {
   readonly mesh: THREE.Mesh;
@@ -34,70 +35,6 @@ function createSun(): THREE.Mesh {
   );
 }
 
-function createStarField(count: number, radius: number): THREE.Points {
-  const positions = new Float32Array(count * 3);
-  const phases = new Float32Array(count);
-  const clusters = [
-    new THREE.Vector3(radius * 0.5, radius * 0.2, -radius * 0.4),
-    new THREE.Vector3(-radius * 0.4, -radius * 0.3, radius * 0.5),
-    new THREE.Vector3(0, radius * 0.6, 0),
-  ];
-
-  for (let i = 0; i < count; i += 1) {
-    if (Math.random() > 0.6) {
-      const cluster = clusters[Math.floor(Math.random() * clusters.length)];
-      const spread = radius * 0.15;
-      positions[i * 3] = cluster.x + (Math.random() - 0.5) * spread;
-      positions[i * 3 + 1] = cluster.y + (Math.random() - 0.5) * spread;
-      positions[i * 3 + 2] = cluster.z + (Math.random() - 0.5) * spread;
-    } else {
-      const distance = 60 + Math.random() * (radius - 60);
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      positions[i * 3] = distance * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = distance * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = distance * Math.cos(phi);
-    }
-    phases[i] = Math.random() * Math.PI * 2;
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
-
-  const material = new THREE.ShaderMaterial({
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    uniforms: {
-      time: { value: 0 },
-      pixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
-    },
-    vertexShader: `
-      attribute float phase;
-      uniform float time;
-      uniform float pixelRatio;
-      varying float brightness;
-
-      void main() {
-        vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
-        brightness = 0.35 + 0.65 * (0.5 + 0.5 * sin(time * 1.8 + phase));
-        gl_PointSize = 0.55 * pixelRatio * (300.0 / -viewPosition.z);
-        gl_Position = projectionMatrix * viewPosition;
-      }
-    `,
-    fragmentShader: `
-      varying float brightness;
-
-      void main() {
-        gl_FragColor = vec4(vec3(1.0), brightness);
-      }
-    `,
-  });
-
-  return new THREE.Points(geometry, material);
-}
-
 export function createCelestialObjects(scene: THREE.Scene): CelestialObjects {
   const root = new THREE.Group();
   const sun = createSun();
@@ -108,7 +45,7 @@ export function createCelestialObjects(scene: THREE.Scene): CelestialObjects {
 
   root.add(new THREE.AmbientLight(0xffffff, 0.3));
   root.add(new THREE.PointLight(0xfdb813, 60, 100));
-  root.add(sun, stars);
+  root.add(sun, stars.object);
 
   for (const config of planetsData) {
     if (config.kind === 'asteroid-belt') {
@@ -136,8 +73,7 @@ export function createCelestialObjects(scene: THREE.Scene): CelestialObjects {
     planets,
     update: (elapsed, delta) => {
       sun.rotation.y += 0.06 * delta;
-      stars.rotation.y += 0.0042 * delta;
-      (stars.material as THREE.ShaderMaterial).uniforms.time.value = elapsed;
+      stars.update(elapsed, delta);
 
       for (const belt of asteroidBelts) {
         belt.update(elapsed, delta);

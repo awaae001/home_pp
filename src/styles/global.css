@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+:root {
+  --motion-duration-fast: 180ms;
+  --motion-duration: 560ms;
+  --motion-duration-slow: 720ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+::view-transition-old(root) {
+  animation: site-fade-out var(--motion-duration) var(--motion-ease-exit) both;
+}
+
+::view-transition-new(root) {
+  animation: site-fade-in var(--motion-duration) var(--motion-ease) both;
+}
+
+@keyframes site-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes site-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 1ms;
+    --motion-duration: 1ms;
+    --motion-duration-slow: 1ms;
+  }
+}

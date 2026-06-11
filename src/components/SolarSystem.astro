@@ -6,7 +6,6 @@
   <canvas id="solar-canvas"></canvas>
   <output id="camera-position" aria-live="polite"></output>
 </div>
-<div class="fixed inset-0 z-5 bg-linear-to-b from-transparent via-[#0d1117]/50 to-[#0d1117]/80 pointer-events-none"></div>
 
 <script>
   let cleanup: (() => void) | undefined;
@@ -43,6 +42,35 @@
     height: 100vh;
     overflow: hidden;
   }
+
+  :global(.project-transition-space) {
+    animation: depart-upward var(--motion-duration-slow) var(--motion-ease) forwards;
+    will-change: transform, opacity;
+  }
+
+  :global(.project-transition-content) {
+    animation: fade-for-departure var(--motion-duration) var(--motion-ease-exit) forwards;
+    pointer-events: none;
+  }
+
+  @keyframes depart-upward {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-32vh) scale(1.08);
+    }
+  }
+
+  @keyframes fade-for-departure {
+    to {
+      opacity: 0;
+      transform: translateY(-24px);
+    }
+  }
+
 
   #solar-canvas {
     display: block;

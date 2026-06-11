@@ -54,13 +54,24 @@ export function createVoyagerController(scene: THREE.Scene): VoyagerController {
   );
   guideLine.computeLineDistances();
 
-  const upperLight = new THREE.PointLight(0xffffff, 648, 50);
-  const lowerLight = new THREE.PointLight(0xffffff, 648, 50);
-  const dishLight = new THREE.PointLight(0xffffff, 648, 50);
+  const lightTarget = new THREE.Object3D();
+  const upperLight = new THREE.SpotLight(0xffffff, 200, 10, Math.PI / 4, 0.6, 2);
+  const lowerLight = new THREE.SpotLight(0xffffff, 200, 10, Math.PI / 4, 0.6, 2);
+  const dishLight = new THREE.SpotLight(0xffffff, 200, 10, Math.PI / 4, 0.6, 2);
+  upperLight.target = lightTarget;
+  lowerLight.target = lightTarget;
+  dishLight.target = lightTarget;
   upperLight.visible = false;
   lowerLight.visible = false;
   dishLight.visible = false;
-  root.add(guideLine, upperLight, lowerLight, dishLight, model);
+  root.add(
+    guideLine,
+    upperLight,
+    lowerLight,
+    dishLight,
+    lightTarget,
+    model,
+  );
   scene.add(root);
 
   new GLTFLoader().load(
@@ -94,12 +105,13 @@ export function createVoyagerController(scene: THREE.Scene): VoyagerController {
 
       const progress = THREE.MathUtils.clamp((elapsed - START_TIME) / FLIGHT_DURATION, 0, 1);
       voyager.position.lerpVectors(start, end, progress);
+      lightTarget.position.copy(voyager.position);
 
       upperLight.position.copy(voyager.position);
-      upperLight.position.y += 10;
+      upperLight.position.y += 5;
       lowerLight.position.copy(voyager.position);
-      lowerLight.position.y -= 10;
-      dishLight.position.copy(voyager.position).addScaledVector(direction, -10);
+      lowerLight.position.y -= 5;
+      dishLight.position.copy(voyager.position).addScaledVector(direction, -5);
       upperLight.visible = elapsed >= START_TIME;
       lowerLight.visible = elapsed >= START_TIME;
       dishLight.visible = elapsed >= START_TIME;
