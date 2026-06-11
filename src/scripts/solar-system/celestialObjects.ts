@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import {
-  AsteroidBelt,
   createOrbit,
   createPlanet,
   planetsData,
 } from '../planets';
 import type { PlanetConfig } from '../planets';
+import { AsteroidBelt } from './asteroidBelt';
 import { disposeObject } from './dispose';
 import { createStarField } from './starField';
 
@@ -38,7 +38,9 @@ function createSun(): THREE.Mesh {
 export function createCelestialObjects(scene: THREE.Scene): CelestialObjects {
   const root = new THREE.Group();
   const sun = createSun();
-  const stars = createStarField(window.innerWidth < 768 ? 5000 : 24000, 800);
+  const stars = createStarField(window.innerWidth < 768 ? 5000 : 24000, 1000, {
+    innerRadius: 120,
+  });
   const asteroidBelts: AsteroidBelt[] = [];
   const planets: CelestialPlanet[] = [];
   const orbitingPlanets: OrbitingPlanet[] = [];

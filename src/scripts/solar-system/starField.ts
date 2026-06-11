@@ -1,5 +1,33 @@
 import * as THREE from 'three';
 
+const CLUSTERED_STAR_RATIO = 0.2;
+const CLUSTER_SPREAD_RATIO = 0.1;
+const CLUSTER_COUNT = 3;
+
+function createRandomClusterCenter(radius: number): THREE.Vector3 {
+  const distance = radius * (0.4 + Math.random() * 0.3);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+
+  return new THREE.Vector3(
+    distance * Math.sin(phi) * Math.cos(theta),
+    distance * Math.sin(phi) * Math.sin(theta),
+    distance * Math.cos(phi),
+  );
+}
+
+function createClusterOffset(spread: number): THREE.Vector3 {
+  const distance = spread * 0.5 * Math.pow(Math.random(), 2);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+
+  return new THREE.Vector3(
+    distance * Math.sin(phi) * Math.cos(theta),
+    distance * Math.sin(phi) * Math.sin(theta),
+    distance * Math.cos(phi),
+  );
+}
+
 export interface StarField {
   readonly object: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
   readonly update: (elapsed: number, delta: number) => void;
@@ -10,6 +38,7 @@ export interface StarField {
 export interface StarFieldOptions {
   readonly distanceAttenuation?: boolean;
   readonly pointSize?: number;
+  readonly innerRadius?: number;
 }
 
 export function createStarField(
@@ -17,25 +46,26 @@ export function createStarField(
   radius: number,
   options: StarFieldOptions = {},
 ): StarField {
+  const innerRadius = Math.min(options.innerRadius ?? 60, radius);
   const positions = new Float32Array(count * 3);
   const phases = new Float32Array(count);
-  const clusters = [
-    new THREE.Vector3(radius * 0.5, radius * 0.2, -radius * 0.4),
-    new THREE.Vector3(-radius * 0.4, -radius * 0.3, radius * 0.5),
-    new THREE.Vector3(0, radius * 0.6, 0),
-  ];
+  const clusters = Array.from(
+    { length: CLUSTER_COUNT },
+    () => createRandomClusterCenter(radius),
+  );
 
   for (let index = 0; index < count; index += 1) {
     const offset = index * 3;
 
-    if (Math.random() > 0.6) {
+    if (Math.random() < CLUSTERED_STAR_RATIO) {
       const cluster = clusters[Math.floor(Math.random() * clusters.length)];
-      const spread = radius * 0.15;
-      positions[offset] = cluster.x + (Math.random() - 0.5) * spread;
-      positions[offset + 1] = cluster.y + (Math.random() - 0.5) * spread;
-      positions[offset + 2] = cluster.z + (Math.random() - 0.5) * spread;
+      const spread = radius * CLUSTER_SPREAD_RATIO;
+      const clusterOffset = createClusterOffset(spread);
+      positions[offset] = cluster.x + clusterOffset.x;
+      positions[offset + 1] = cluster.y + clusterOffset.y;
+      positions[offset + 2] = cluster.z + clusterOffset.z;
     } else {
-      const distance = 60 + Math.random() * (radius - 60);
+      const distance = innerRadius + Math.random() * (radius - innerRadius);
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       positions[offset] = distance * Math.sin(phi) * Math.cos(theta);
@@ -70,7 +100,7 @@ export function createStarField(
 
       void main() {
         vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
-        brightness = 0.35 + 0.65 * (0.5 + 0.5 * sin(time * 1.8 + phase));
+        brightness = 0.65 + 0.25 * (0.5 + 0.5 * sin(time * 0.3 + phase));
         float perspectiveScale = 300.0 / max(-viewPosition.z, 1.0);
         gl_PointSize = pointSize * pixelRatio * mix(1.0, perspectiveScale, distanceAttenuation);
         gl_Position = projectionMatrix * viewPosition;
@@ -92,7 +122,7 @@ export function createStarField(
   return {
     object,
     update: (elapsed, delta) => {
-      object.rotation.y += 0.0042 * delta;
+      object.rotation.y += 0.0001 * delta;
       material.uniforms.time.value = elapsed;
     },
     resize: () => {

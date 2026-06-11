@@ -1,19 +1,19 @@
-//! Owns the standalone Three.js starfield scene used by content pages.
-
 import * as THREE from 'three';
 import { createStarField } from './solar-system/starField';
 import type { Dispose } from './solarSystem';
 
 export function initStarfield(canvas: HTMLCanvasElement): Dispose {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1600);
   const renderer = new THREE.WebGLRenderer({
     canvas,
     alpha: true,
     antialias: false,
     powerPreference: 'low-power',
   });
-  const stars = createStarField(window.innerWidth < 768 ? 5000 : 24000, 800);
+  const stars = createStarField(window.innerWidth < 768 ? 5000 : 24000, 1000, {
+    innerRadius: 120,
+  });
   const timer = new THREE.Timer();
   let animationFrame: number | null = null;
   let disposed = false;

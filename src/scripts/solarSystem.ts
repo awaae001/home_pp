@@ -144,9 +144,9 @@ export function initSolarSystem(canvas: HTMLCanvasElement): Dispose {
         const { x, y, z } = context.camera.position;
         const fps = Math.round((renderedFrames * 1000) / statsDuration);
         cameraPosition.textContent = [
-          `X ${x.toFixed(2)}`,
-          `Y ${y.toFixed(2)}`,
-          `Z ${z.toFixed(2)}`,
+          `CAN(X ${x.toFixed(2)} ·`,
+          `Y ${y.toFixed(2)} ·`,
+          `Z ${z.toFixed(2)} )|`,
           `FPS ${fps}`,
         ].join('  ');
       }

@@ -20,7 +20,7 @@ export interface SceneContext {
 /// Creates the core Three.js scene bound to the supplied canvas.
 export function createSceneContext(canvas: HTMLCanvasElement): SceneContext {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1600);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   const controls = new OrbitControls(camera, canvas);
 
