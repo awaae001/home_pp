@@ -12,6 +12,7 @@
 </div>
 
 <script>
+  const SOLAR_WARMED_KEY = 'solar-system:warmed';
   let cleanup: (() => void) | undefined;
   let loadGeneration = 0;
 
@@ -27,8 +28,17 @@
       return;
     }
 
-    loaderText && (loaderText.textContent = '正在下载 Three.js 环境');
+    const warmed = sessionStorage.getItem(SOLAR_WARMED_KEY) === 'true';
+    if (warmed) {
+      loader?.classList.add('is-warmed');
+    }
+
+    console.log(`[Solar] ${warmed ? '从会话缓存恢复' : '开始下载'} Three.js 环境……`);
+    loaderText && (loaderText.textContent = warmed
+      ? '正在恢复星图……'
+      : '正在下载 Three.js 环境……');
     const { initSolarSystem } = await import('../scripts/solarSystem');
+    console.log('[Solar] Three.js 下载完成，开始初始化……');
     if (generation !== loadGeneration || !canvas.isConnected) {
       return;
     }
@@ -39,9 +49,12 @@
       ready: '加载完成……',
     } as const;
     const dispose = await initSolarSystem(canvas, {
+      warmed,
       onLoadStage: (stage) => {
         if (generation === loadGeneration && loaderText) {
-          loaderText.textContent = stageLabels[stage];
+          loaderText.textContent = warmed && stage === 'model'
+            ? '尝试从缓存恢复模型……'
+            : stageLabels[stage];
         }
       },
     });
@@ -52,8 +65,18 @@
     }
 
     cleanup = dispose;
+    sessionStorage.setItem(SOLAR_WARMED_KEY, 'true');
+    console.log('[Solar] 初始化完成，画布就绪');
     canvas.classList.add('is-ready');
-    loader?.classList.add('is-complete');
+    if (loader) {
+      if (!warmed) {
+        await new Promise((r) => window.setTimeout(r, 1000));
+      }
+      if (generation === loadGeneration) {
+        console.log('[Solar] 加载完成，循环已就绪');
+        loader!.classList.add('is-complete');
+      }
+    }
   });
 
   document.addEventListener('astro:before-swap', () => {
@@ -130,6 +153,14 @@
   #solar-loader.is-complete {
     opacity: 0;
     transition-delay: 500ms;
+  }
+
+  #solar-loader.is-warmed {
+    transition-duration: 180ms;
+  }
+
+  #solar-loader.is-warmed.is-complete {
+    transition-delay: 0ms;
   }
 
   .loader-mark {

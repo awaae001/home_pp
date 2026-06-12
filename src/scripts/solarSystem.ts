@@ -11,6 +11,7 @@ export type SolarSystemLoadStage = 'model' | 'shaders' | 'ready';
 
 export interface SolarSystemOptions {
   readonly onLoadStage?: (stage: SolarSystemLoadStage) => void;
+  readonly warmed?: boolean;
 }
 
 type CameraMode =
@@ -189,10 +190,27 @@ export async function initSolarSystem(
   window.addEventListener('resize', context.resize);
   document.addEventListener('visibilitychange', syncAnimation);
 
+  console.log('[Solar] 开始下载模型 (Voyager)……');
   options.onLoadStage?.('model');
-  await voyager.ready;
+  try {
+    await voyager.ready;
+    console.log('[Solar] 模型下载完成');
+  } catch (err) {
+    console.warn('[Solar] 模型下载失败，跳过 Voyager，继续初始化:', err);
+  }
+
+  const shadersBeganAt = performance.now();
+  console.log('[Solar] 开始编译着色器……');
   options.onLoadStage?.('shaders');
   await context.renderer.compileAsync(context.scene, context.camera);
+  const shadersTook = performance.now() - shadersBeganAt;
+  console.log(`[Solar] 着色器编译完成 (实际耗时 ${Math.round(shadersTook)}ms)`);
+  if (!options.warmed && shadersTook < 800) {
+    const pad = 800 - shadersTook;
+    await new Promise((r) => window.setTimeout(r, pad));
+  }
+
+  console.log('[Solar] 加载完成，准备启动渲染循环');
   options.onLoadStage?.('ready');
   syncAnimation();
 

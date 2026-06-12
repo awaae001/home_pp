@@ -8,21 +8,29 @@
 
 <script>
   let disposeStarfield: (() => void) | undefined;
+  let loadGeneration = 0;
 
   document.addEventListener("astro:page-load", async () => {
     disposeStarfield?.();
+    disposeStarfield = undefined;
+
+    const generation = ++loadGeneration;
     const canvas = document.getElementById("project-starfield");
     if (!(canvas instanceof HTMLCanvasElement)) {
       return;
     }
 
     const { initStarfield } = await import("../scripts/starfield");
-    if (canvas.isConnected) {
-      disposeStarfield = initStarfield(canvas);
+    if (generation !== loadGeneration || !canvas.isConnected) {
+      return;
     }
+
+    disposeStarfield = initStarfield(canvas);
+    canvas.classList.add('is-ready');
   });
 
   document.addEventListener("astro:before-swap", () => {
+    loadGeneration += 1;
     disposeStarfield?.();
     disposeStarfield = undefined;
   });
@@ -36,17 +44,17 @@
     overflow: hidden;
     pointer-events: none;
     background: transparent;
-    animation: starfield-enter var(--motion-duration-slow) var(--motion-ease) both;
   }
 
   canvas {
     display: block;
     width: 100%;
     height: 100%;
+    opacity: 0;
+    transition: opacity 1200ms var(--motion-ease);
   }
 
-  @keyframes starfield-enter {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  canvas.is-ready {
+    opacity: 1;
   }
 </style>
