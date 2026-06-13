@@ -1,16 +1,189 @@
 ---
+import { Icon } from 'astro-icon/components';
 import Starfield from '../components/Starfield.astro';
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout>
+<Layout title="关于我 · awaae001">
 	<Starfield />
 
-	<div class="relative z-10 flex flex-col items-center justify-center h-screen gap-6">
-		<h1 class="text-3xl font-bold text-white">关于我</h1>
-		<p class="text-gray-400">这里现在还没有东西</p>
-		<a href="/" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-200">
-			返回首页
+	<style>
+		.snap-container {
+			-ms-overflow-style: none;
+			scrollbar-width: none;
+		}
+		.snap-container::-webkit-scrollbar {
+			display: none;
+		}
+	</style>
+
+	<div class="fixed top-6 right-6 z-20 flex gap-4" style="animation: reveal-down 500ms ease both;">
+		<a
+			href="/"
+			title="返回"
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 hover:scale-105 cursor-pointer flex items-center justify-center"
+		>
+			<Icon name="mdi:arrow-left" class="w-4 h-4" />
 		</a>
 	</div>
+
+	<!-- 阅读状态指示器 -->
+	<div class="fixed left-6 md:left-10 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-4 pointer-events-none" style="animation: reveal-right 500ms ease both;">
+		<span class="text-xs tracking-widest text-white/50" style="writing-mode: vertical-rl;">探索进度</span>
+		<div class="w-0.5 h-32 md:h-48 bg-white/10 rounded-full relative overflow-hidden">
+			<div id="scroll-indicator" class="absolute top-0 left-0 w-full bg-white/80 rounded-full" style="height: 0%; transition: height 0.15s ease-out;"></div>
+		</div>
+	</div>
+
+	<div class="snap-container relative z-10 h-dvh w-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
+		<!-- 第一屏：个人头像 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
+			<img src="/avatar.webp" alt="awaae001" class="w-32 h-32 rounded-full object-cover shadow-lg border-2 border-white/20 hover:scale-105 transition-transform duration-300" />
+			
+			<div class="mt-6 text-lg text-white flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+				<span class="text-2xl font-bold">awaae001</span>
+				<span class="hidden sm:inline text-white/30">|</span>
+				<span class="text-gray-300 tracking-wide">学生 ， 文科 ，计算机</span>				
+				<span class="hidden sm:inline text-white/30">|</span>
+				<span class="text-gray-300 tracking-wide">关于我</span>
+			</div>
+		</section>
+
+		<!-- 第二屏：语言和技术 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="flex flex-col md:flex-row items-center md:items-start justify-center gap-12 md:gap-24 w-full max-w-4xl">
+				<div class="flex flex-col gap-10 w-full md:w-1/2 items-center md:items-end text-center md:text-right">
+					<div class="flex flex-col items-center md:items-end gap-5">
+						<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">我的语言</h2>
+						<div class="flex flex-wrap justify-center md:justify-end gap-3 md:gap-5">
+							<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">中文</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">英语</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">韩语</span>
+						</div>
+					</div>
+
+					<div class="w-12 h-px bg-white/20"></div>
+					<div class="flex flex-col items-center md:items-end gap-5">
+						<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">计算机语言</h2>
+						<div class="flex flex-wrap justify-center md:justify-end gap-3 md:gap-5">
+							<span class="text-lg md:text-xl text-blue-300 hover:text-blue-200 transition-colors">js/ts</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-yellow-300 hover:text-yellow-200 transition-colors">py</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-cyan-300 hover:text-cyan-200 transition-colors">go</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-orange-300 hover:text-orange-200 transition-colors">rust</span>
+						</div>
+					</div>
+				</div>
+
+
+				<div class="hidden md:block w-px h-48 bg-white/10"></div>
+				<div class="flex flex-col gap-10 w-full md:w-1/2 items-center md:items-start text-center md:text-left">
+					<div class="flex flex-col items-center md:items-start gap-8">
+						<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">常用工具</h2>
+						<div class="grid grid-cols-4 gap-6 md:gap-8 opacity-80">
+							<Icon name="mdi:git" class="w-10 h-10 text-[#F05032] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Git" />
+							<Icon name="mdi:github" class="w-10 h-10 text-white hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="GitHub" />
+							<Icon name="mdi:docker" class="w-10 h-10 text-[#2496ED] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Docker" />
+							<Icon name="mdi:linux" class="w-10 h-10 text-white hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Linux" />
+							<Icon name="mdi:microsoft-visual-studio-code" class="w-10 h-10 text-[#007ACC] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="VS Code" />
+							<Icon name="mdi:database" class="w-10 h-10 text-gray-300 hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Database" />
+							<Icon name="simple-icons:cloudflare" class="w-10 h-10 text-[#F38020] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Cloudflare" />
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</section>
+
+		<!-- 第三屏：联系我 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="flex flex-col items-center gap-12 w-full max-w-4xl">
+				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase">联系到我</h2>
+				
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full justify-items-center">
+					<a href="https://t.me/jiuci_world" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center gap-4 group">
+						<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-[#2AABEE]/20 transition-all duration-300">
+							<Icon name="mdi:telegram" class="w-10 h-10 text-[#2AABEE] group-hover:scale-110 transition-transform" title="Telegram" />
+						</div>
+						<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">@jiuci_world</span>
+					</a>
+
+					<a href="mailto:i@neosora.cc" class="flex flex-col items-center gap-4 group">
+						<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
+							<Icon name="mdi:email" class="w-10 h-10 text-white group-hover:scale-110 transition-transform" title="Email" />
+						</div>
+						<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">i@neosora.cc</span>
+					</a>
+
+					<a href="https://github.com/awaae001" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center gap-4 group">
+						<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
+							<Icon name="mdi:github" class="w-10 h-10 text-white group-hover:scale-110 transition-transform" title="GitHub" />
+						</div>
+						<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">awaae001</span>
+					</a>
+				</div>
+			</div>
+		</section>
+		<!-- 第四屏：结语 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
+			<div class="text-center relative flex flex-col gap-6">
+				<p id="greeting-text" class="text-sm md:text-base text-white/40 tracking-[0.5em] md:tracking-[0.8em] uppercase pr-[-0.5em] transition-opacity duration-1000 opacity-0">
+					迷失的人啊……
+				</p>
+				<p class="text-xl md:text-3xl font-light text-white/80 tracking-[0.2em] md:tracking-[0.3em] font-serif italic" style="text-shadow: 0 0 20px rgba(255,255,255,0.3);">
+					“愿你我在星海中，找到自己的航向”
+				</p>
+				<div class="w-12 h-px bg-white/20 mx-auto mt-2"></div>
+			</div>
+		</section>
+	</div>
+
+	<script>
+		const container = document.querySelector('.snap-container');
+		const indicator = document.getElementById('scroll-indicator');
+		
+		if (container && indicator) {
+			const updateScroll = () => {
+				const scrollTop = container.scrollTop;
+				const scrollHeight = container.scrollHeight - container.clientHeight;
+				const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+				indicator.style.height = `${progress}%`;
+			};
+
+			container.addEventListener('scroll', updateScroll);
+			updateScroll();
+		}
+
+		// 动态文案
+		const greetings = [
+			"迷失的人啊……",
+			"误入此地的旅行者啊……",
+			"等待出发的旅人啊……",
+			"带伤的剑客啊……"
+		];
+		const greetingEl = document.getElementById('greeting-text');
+		if (greetingEl) {
+			greetingEl.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+			const observer = new IntersectionObserver((entries) => {
+				entries.forEach(entry => {
+					if (entry.isIntersecting) {
+						greetingEl.classList.remove('opacity-0');
+					} else {
+						greetingEl.classList.add('opacity-0');
+						setTimeout(() => {
+							if(greetingEl.classList.contains('opacity-0')) {
+								greetingEl.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+							}
+						}, 1000);
+					}
+				});
+			}, { threshold: 0.5 });
+			
+			observer.observe(greetingEl);
+		}
+	</script>
 </Layout>
