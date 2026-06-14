@@ -33,10 +33,11 @@ import Layout from '../layouts/Layout.astro';
 		<div class="w-0.5 h-32 md:h-48 bg-white/10 rounded-full relative overflow-hidden">
 			<div id="scroll-indicator" class="absolute top-0 left-0 w-full bg-white/80 rounded-full" style="height: 0%; transition: height 0.15s ease-out;"></div>
 		</div>
+		<span id="scroll-percentage" class="text-xs font-mono text-white/50 mt-1 w-8 text-center">0%</span>
 	</div>
 
 	<div class="snap-container relative z-10 h-dvh w-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
-		<!-- 第一屏：个人头像 -->
+		<!-- 个人头像 -->
 		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
 			<img src="/avatar.webp" alt="awaae001" class="w-32 h-32 rounded-full object-cover shadow-lg border-2 border-white/20 hover:scale-105 transition-transform duration-300" />
 			
@@ -49,7 +50,43 @@ import Layout from '../layouts/Layout.astro';
 			</div>
 		</section>
 
-		<!-- 第二屏：语言和技术 -->
+		<!-- 契机与故事 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="max-w-3xl w-full flex flex-col gap-8 relative px-6 md:px-12">
+				<!-- 装饰性引号 -->
+				<div class="absolute -top-12 left-0 text-7xl text-white/5 font-serif select-none pointer-events-none">"</div>
+				
+				<div class="flex flex-col gap-8 z-10">
+					<div class="flex items-center gap-4">
+						<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase">契机</h2>
+						<div class="flex-1 h-px bg-linear-to-r from-white/20 to-transparent"></div>
+					</div>
+
+					<div class="space-y-6 text-gray-300/80 text-base md:text-lg leading-relaxed font-light tracking-wide">
+						<p class="transition-colors duration-500 hover:text-white flex items-center gap-2">
+							故事的开端在 <span class="text-white/90 font-medium">2024</span> 年，从搭起一个 
+							<span class="inline-flex items-center gap-1 text-blue-300/80">
+								<Icon name="simple-icons:hexo" class="w-5 h-5" />
+								Hexo
+							</span>
+							博客开始。
+						</p>
+						<p class="transition-colors duration-500 hover:text-white">
+							自然而然地，小小的老子成为了一个<span class="text-white/90">“嘉豪”</span>，但这不影响我依旧……<br>
+							喜欢文字，喜欢少年的风，喜欢山上的雪，也喜欢那些该死的诀别。
+						</p>
+						<p class="transition-colors duration-500 hover:text-white">
+							我不想在我的主页去讨论什么是文科的浪漫，或者理科的严谨。<br>
+							在这个 <span class="text-white/90 font-medium tracking-widest">AI</span> 时代，界限早已模糊——剩下的只有<span class="text-white/90">表达</span>，<span class="text-white/90">设计</span>，还有<span class="text-white/90">审美</span>。
+						</p>
+					</div>
+				</div>
+
+				<div class="absolute -bottom-16 right-0 text-7xl text-white/5 font-serif select-none pointer-events-none transform rotate-180">"</div>
+			</div>
+		</section>
+
+		<!-- 语言和技术 -->
 		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
 			<div class="flex flex-col md:flex-row items-center md:items-start justify-center gap-12 md:gap-24 w-full max-w-4xl">
 				<div class="flex flex-col gap-10 w-full md:w-1/2 items-center md:items-end text-center md:text-right">
@@ -95,11 +132,47 @@ import Layout from '../layouts/Layout.astro';
 						</div>
 					</div>
 				</div>
-
 			</div>
 		</section>
 
-		<!-- 第三屏：联系我 -->
+		<!-- 生活状态与爱好 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="flex flex-col items-center gap-12 w-full max-w-4xl">
+				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase relative">
+					日常图鉴
+					<div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-px bg-white/30"></div>
+				</h2>
+				
+				<div class="flex flex-wrap justify-center gap-10 md:gap-16 mt-4 max-w-2xl">
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:controller-classic" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">打游戏</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:shoe-sneaker" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">四处转转</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:food-apple" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">吃零食</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:book-open-page-variant" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">读书</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:weather-pouring" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">自怨自艾</span>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- 联系我 -->
 		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
 			<div class="flex flex-col items-center gap-12 w-full max-w-4xl">
 				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase">联系到我</h2>
@@ -128,7 +201,29 @@ import Layout from '../layouts/Layout.astro';
 				</div>
 			</div>
 		</section>
-		<!-- 第四屏：结语 -->
+
+		<!-- 最后 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="max-w-3xl w-full flex flex-col items-center text-center gap-12 relative px-6 md:px-12">
+				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-[0.3em] uppercase relative">
+					// EOF
+				</h2>
+				
+				<!-- <div class="space-y-8 text-gray-400 text-base md:text-lg leading-relaxed font-light tracking-wider mt-4">
+					<p class="transition-colors duration-500 hover:text-white">
+						来客啊，我们寄宿在同一片星空下
+					</p>
+					<p class="transition-colors duration-500 hover:text-white">
+						如果你也曾在破晓前迷失……如果，你也向往那些将至未至的远方与归途
+					</p>
+					<p class="transition-colors duration-500 hover:text-white mt-8 text-white/80 italic">
+						那么，很高兴认识你。
+					</p>
+				</div> -->
+			</div>
+		</section>
+
+		<!-- 结语 -->
 		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
 			<div class="text-center relative flex flex-col gap-6">
 				<p id="greeting-text" class="text-sm md:text-base text-white/40 tracking-[0.5em] md:tracking-[0.8em] uppercase pr-[-0.5em] transition-opacity duration-1000 opacity-0">
@@ -145,6 +240,7 @@ import Layout from '../layouts/Layout.astro';
 	<script>
 		const container = document.querySelector('.snap-container');
 		const indicator = document.getElementById('scroll-indicator');
+		const percentageText = document.getElementById('scroll-percentage');
 		
 		if (container && indicator) {
 			const updateScroll = () => {
@@ -152,6 +248,9 @@ import Layout from '../layouts/Layout.astro';
 				const scrollHeight = container.scrollHeight - container.clientHeight;
 				const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
 				indicator.style.height = `${progress}%`;
+				if (percentageText) {
+					percentageText.textContent = `${Math.round(progress)}%`;
+				}
 			};
 
 			container.addEventListener('scroll', updateScroll);
