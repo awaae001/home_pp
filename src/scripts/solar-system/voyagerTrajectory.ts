@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 const FLIGHT_RADIUS = 70;
 const TRAJECTORY_SAMPLES = 512;
-const GUIDE_EXTENSION = 5000;
 const IMPACT_PARAMETER_RATIO = 0.2;
 const ORBIT_CLEARANCE = 8;
 // Chosen for a visually legible flyby, not as a physically accurate Voyager deflection.
@@ -20,6 +19,8 @@ interface MotionState {
 export interface FlybyTrajectory {
   readonly points: readonly THREE.Vector3[];
   readonly directions: readonly THREE.Vector3[];
+  /** Arc length of the simulated close flyby. */
+  readonly flybyLength: number;
 }
 
 function gravitationalParameter(
@@ -101,7 +102,12 @@ export function createFlybyTrajectory(): FlybyTrajectory {
     directions.push(state.velocity.clone().normalize());
   }
 
-  return { points, directions };
+  let flybyLength = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    flybyLength += points[index - 1].distanceTo(points[index]);
+  }
+
+  return { points, directions, flybyLength };
 }
 
 export function createGuidePoints(trajectory: FlybyTrajectory): THREE.Vector3[] {
@@ -109,11 +115,14 @@ export function createGuidePoints(trajectory: FlybyTrajectory): THREE.Vector3[] 
   const end = trajectory.points[trajectory.points.length - 1];
   const incomingDirection = trajectory.directions[0];
   const outgoingDirection = trajectory.directions[trajectory.directions.length - 1];
+  // Keep both asymptotic legs proportional to the actual simulated flyby,
+  // so changing the flyby radius or deflection also changes the full route.
+  const extension = trajectory.flybyLength;
 
   return [
-    start.clone().addScaledVector(incomingDirection, -GUIDE_EXTENSION),
+    start.clone().addScaledVector(incomingDirection, -extension),
     ...trajectory.points,
-    end.clone().addScaledVector(outgoingDirection, GUIDE_EXTENSION),
+    end.clone().addScaledVector(outgoingDirection, extension),
   ];
 }
 

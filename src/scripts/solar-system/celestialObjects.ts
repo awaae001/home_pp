@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { planetsData } from '../planets';
-import type { PlanetConfig } from '../planets';
+import type { PlanetConfig, SolarObjectConfig } from '../planets';
 import { AsteroidBelt } from './asteroidBelt';
 import { disposeObject } from './dispose';
 import { createStarField } from './starField';
 
 const FULL_ORBIT = Math.PI * 2;
 const ORBIT_SPEED_SCALE = 0.0026;
+const BACKGROUND_STAR_CLEARANCE = 120;
 
 interface OrbitingPlanet {
   readonly mesh: THREE.Mesh;
@@ -81,11 +82,21 @@ function positionPlanet(planet: OrbitingPlanet): void {
   planet.mesh.position.applyEuler(planet.orbitRotation);
 }
 
+function getOuterPlanetEdge(objects: readonly SolarObjectConfig[]): number {
+  return objects.reduce((outerEdge, object) => (
+    object.kind === 'planet'
+      ? Math.max(outerEdge, object.orbitRadius + object.radius)
+      : outerEdge
+  ), 0);
+}
+
 export function createCelestialObjects(scene: THREE.Scene): CelestialObjects {
   const root = new THREE.Group();
   const sun = createSun();
+  const outerPlanetEdge = getOuterPlanetEdge(planetsData);
   const stars = createStarField(window.innerWidth < 768 ? 5000 : 24000, 1000, {
-    innerRadius: 120,
+    // Background stars begin a fixed distance outside whichever planet is farthest out.
+    innerRadius: outerPlanetEdge + BACKGROUND_STAR_CLEARANCE,
   });
   const asteroidBelts: AsteroidBelt[] = [];
   const planets: CelestialPlanet[] = [];
