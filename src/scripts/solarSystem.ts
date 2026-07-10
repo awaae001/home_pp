@@ -3,6 +3,7 @@ import { InteractionManager } from './interactions';
 import type { InteractiveTarget } from './interactions';
 import { createCelestialObjects } from './solar-system/celestialObjects';
 import { createSceneContext } from './solar-system/scene';
+import { FlightControls } from './solar-system/flightControls';
 import { createVoyagerController } from './solar-system/voyager';
 
 export type Dispose = () => void;
@@ -34,7 +35,8 @@ export async function initSolarSystem(
   const context = createSceneContext(canvas);
   const celestialObjects = createCelestialObjects(context.scene);
   const voyager = createVoyagerController(context.scene);
-  const cameraPosition = document.getElementById('camera-position');
+  const cameraStats = document.getElementById('camera-stats');
+  const flightHud = document.getElementById('flight-hud');
   const mainMask = document.getElementById('main-mask');
   let cameraMode: CameraMode = { kind: 'free' };
   let animationId: number | null = null;
@@ -84,6 +86,30 @@ export async function initSolarSystem(
     lineThreshold: 0.4,
     maxDistance: 50,
   });
+
+  let flightModeEnabled = document.getElementById('btn-toggle-flight')?.dataset.enabled === 'true';
+  const updateFlightHud = (fov = context.camera.fov): void => {
+    if (flightHud) {
+      flightHud.textContent = flightModeEnabled
+        ? `飞行模式已开启 · WASD 移动 · Shift 上升 · Ctrl 下降 · [ ] 视角 ${fov.toFixed(0)}°`
+        : `飞行模式未开启 · 点击右上角“开启飞行”`;
+    }
+  };
+  const flightControls = new FlightControls({
+    camera: context.camera,
+    controls: context.controls,
+    isEnabled: () => mainMask?.style.pointerEvents === 'none',
+    onFovChange: updateFlightHud,
+  });
+  flightControls.setEnabled(flightModeEnabled);
+  const setFlightMode = (event: Event): void => {
+    const enabled = event instanceof CustomEvent && event.detail?.enabled === true;
+    flightModeEnabled = enabled;
+    flightControls.setEnabled(enabled);
+    updateFlightHud();
+  };
+  window.addEventListener('solar-flight-mode-change', setFlightMode);
+  updateFlightHud();
 
   const resetView = (): void => {
     cameraMode = {
@@ -146,14 +172,17 @@ export async function initSolarSystem(
       }
     }
 
+    if (cameraMode.kind === 'free') {
+      flightControls.update(delta);
+    }
     context.controls.update();
     renderedFrames += 1;
     const statsDuration = timestamp - statsStartedAt;
     if (statsDuration >= 500) {
-      if (cameraPosition) {
+      if (cameraStats) {
         const { x, y, z } = context.camera.position;
         const fps = Math.round((renderedFrames * 1000) / statsDuration);
-        cameraPosition.textContent = [
+        cameraStats.textContent = [
           `CAN(X ${x.toFixed(2)} ·`,
           `Y ${y.toFixed(2)} ·`,
           `Z ${z.toFixed(2)} )|`,
@@ -222,6 +251,8 @@ export async function initSolarSystem(
     window.removeEventListener('resize', context.resize);
     document.removeEventListener('visibilitychange', syncAnimation);
     interactions.dispose();
+    window.removeEventListener('solar-flight-mode-change', setFlightMode);
+    flightControls.dispose();
     voyager.dispose();
     celestialObjects.dispose();
     timer.dispose();

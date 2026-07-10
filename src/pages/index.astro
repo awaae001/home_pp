@@ -55,6 +55,15 @@ import { Icon } from "astro-icon/components";
 
 	<div class="fixed top-6 right-6 z-20 flex gap-4">
 		<button
+			id="btn-toggle-flight"
+			title="开启飞行模式"
+			data-enabled="false"
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center gap-2"
+		>
+			<Icon name="mdi:airplane" class="w-4 h-4" />
+			<span id="flight-mode-label">开启飞行</span>
+		</button>
+		<button
 			id="btn-reset-view"
 			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center gap-2"
 		>
@@ -100,10 +109,23 @@ import { Icon } from "astro-icon/components";
 		const btnProjects = document.getElementById('btn-projects');
 		const btnBack = document.getElementById('btn-back');
 		const btnReset = document.getElementById('btn-reset-view');
+		const btnToggleFlight = document.getElementById('btn-toggle-flight');
+		const flightModeLabel = document.getElementById('flight-mode-label');
 		const mainContent = document.getElementById('main-content');
 		const mainMask = document.getElementById('main-mask');
 
-		if (btnWebsite && btnBack && btnReset && mainContent && mainMask) {
+		if (btnWebsite && btnBack && btnReset && btnToggleFlight && mainContent && mainMask) {
+			const setFlightMode = (enabled: boolean) => {
+				btnToggleFlight.dataset.enabled = String(enabled);
+				btnToggleFlight.title = enabled ? '关闭飞行模式' : '开启飞行模式';
+				if (flightModeLabel) {
+					flightModeLabel.textContent = enabled ? '关闭飞行' : '开启飞行';
+				}
+				window.dispatchEvent(new CustomEvent('solar-flight-mode-change', {
+					detail: { enabled },
+				}));
+			};
+
 			btnWebsite.addEventListener('click', (e) => {
 				e.preventDefault();
 				mainContent.style.opacity = '0';
@@ -113,11 +135,18 @@ import { Icon } from "astro-icon/components";
 				
 				btnBack.style.opacity = '1';
 				btnBack.style.pointerEvents = 'auto';
+				btnToggleFlight.style.opacity = '1';
+				btnToggleFlight.style.pointerEvents = 'auto';
 				btnReset.style.opacity = '1';
 				btnReset.style.pointerEvents = 'auto';
 			});
 
+			btnToggleFlight.addEventListener('click', () => {
+				setFlightMode(btnToggleFlight.dataset.enabled !== 'true');
+			});
+
 			btnBack.addEventListener('click', () => {
+				setFlightMode(false);
 				mainContent.style.opacity = '1';
 				mainContent.style.pointerEvents = 'auto';
 				mainMask.style.opacity = '1';
@@ -125,6 +154,8 @@ import { Icon } from "astro-icon/components";
 				
 				btnBack.style.opacity = '0';
 				btnBack.style.pointerEvents = 'none';
+				btnToggleFlight.style.opacity = '0';
+				btnToggleFlight.style.pointerEvents = 'none';
 				btnReset.style.opacity = '0';
 				btnReset.style.pointerEvents = 'none';
 			});

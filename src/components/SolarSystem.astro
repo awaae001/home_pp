@@ -4,7 +4,10 @@
 
 <div id="solar-system-container" class="fixed inset-0 z-0">
   <canvas id="solar-canvas"></canvas>
-  <output id="camera-position" aria-live="polite"></output>
+  <output id="camera-position" aria-live="polite">
+    <span id="flight-hud"></span>
+    <span id="camera-stats"></span>
+  </output>
 </div>
 <div id="solar-loader" role="status" aria-live="polite">
   <span class="loader-mark" aria-hidden="true"></span>
@@ -182,11 +185,18 @@
     position: absolute;
     bottom: 1.5rem;
     left: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
     color: rgba(255, 255, 255, 0.65);
     font-family: monospace;
     font-size: 0.75rem;
     letter-spacing: 0.04em;
     pointer-events: none;
+  }
+
+  #flight-hud {
+    color: rgba(255, 255, 255, 0.82);
   }
 
   :global(.solar-tooltip) {

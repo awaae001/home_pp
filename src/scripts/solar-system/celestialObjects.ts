@@ -44,6 +44,15 @@ function createPlanet(config: PlanetConfig): THREE.Mesh {
       roughness: 0.8,
     }),
   );
+  // A separate back-facing interior preserves the normal exterior appearance
+  // while giving the camera a black wall after it enters the sphere.
+  planet.add(new THREE.Mesh(
+    new THREE.SphereGeometry(config.radius, 32, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      side: THREE.BackSide,
+    }),
+  ));
   planet.userData = { config };
   return planet;
 }
