@@ -1,8 +1,29 @@
 ---
 // SolarSystem component - Three.js 星系背景
+import { useTranslations, type Lang } from "../i18n/utils";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
 ---
 
-<div id="solar-system-container" class="fixed inset-0 z-0">
+<div
+  id="solar-system-container"
+  class="fixed inset-0 z-0"
+  data-flight-enabled={t("home.flight.status.enabled")}
+  data-flight-disabled={t("home.flight.status.disabled")}
+  data-camera-label={t("home.camera")}
+  data-fps-label={t("home.fps")}
+  data-loader-loading={t("home.solar.loading")}
+  data-loader-restoring={t("home.solar.restoring")}
+  data-loader-model={t("home.solar.model")}
+  data-loader-shaders={t("home.solar.shaders")}
+  data-loader-ready={t("home.solar.ready")}
+  data-loader-cached-model={t("home.solar.cachedModel")}
+>
   <canvas id="solar-canvas"></canvas>
   <output id="camera-position" aria-live="polite">
     <span id="flight-hud"></span>
@@ -11,7 +32,7 @@
 </div>
 <div id="solar-loader" role="status" aria-live="polite">
   <span class="loader-mark" aria-hidden="true"></span>
-  <span id="solar-loader-text">正在下载 Three.js 环境……</span>
+  <span id="solar-loader-text">{t("home.solar.loading")}</span>
 </div>
 
 <script>
@@ -32,14 +53,23 @@
     }
 
     const warmed = sessionStorage.getItem(SOLAR_WARMED_KEY) === 'true';
+    const solarContainer = document.getElementById('solar-system-container');
+    const loaderLabels = {
+      loading: solarContainer?.dataset.loaderLoading ?? 'Downloading Three.js environment…',
+      restoring: solarContainer?.dataset.loaderRestoring ?? 'Restoring star map…',
+      model: solarContainer?.dataset.loaderModel ?? 'Downloading model…',
+      shaders: solarContainer?.dataset.loaderShaders ?? 'Compiling shaders…',
+      ready: solarContainer?.dataset.loaderReady ?? 'Loaded…',
+      cachedModel: solarContainer?.dataset.loaderCachedModel ?? 'Trying to restore model from cache…',
+    };
     if (warmed) {
       loader?.classList.add('is-warmed');
     }
 
     console.log(`[Solar] ${warmed ? '从会话缓存恢复' : '开始下载'} Three.js 环境……`);
     loaderText && (loaderText.textContent = warmed
-      ? '正在恢复星图……'
-      : '正在下载 Three.js 环境……');
+      ? loaderLabels.restoring
+      : loaderLabels.loading);
     const { initSolarSystem } = await import('../scripts/solarSystem');
     console.log('[Solar] Three.js 下载完成，开始初始化……');
     if (generation !== loadGeneration || !canvas.isConnected) {
@@ -47,16 +77,16 @@
     }
 
     const stageLabels = {
-      model: '正在下载模型……',
-      shaders: '正在编译着色器……',
-      ready: '加载完成……',
+      model: loaderLabels.model,
+      shaders: loaderLabels.shaders,
+      ready: loaderLabels.ready,
     } as const;
     const dispose = await initSolarSystem(canvas, {
       warmed,
       onLoadStage: (stage) => {
         if (generation === loadGeneration && loaderText) {
           loaderText.textContent = warmed && stage === 'model'
-            ? '尝试从缓存恢复模型……'
+            ? loaderLabels.cachedModel
             : stageLabels[stage];
         }
       },

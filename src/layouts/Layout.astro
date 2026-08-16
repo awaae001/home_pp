@@ -13,7 +13,7 @@ interface Props {
 
 const {
 	title = 'awaae001 · Home',
-	description = 'awaae001 的个人主页，介绍我自己，给世界，给访客，给那些该死的未来。',
+	description = 'The personal homepage of awaae001 — about myself, for the world, for visitors, and for those damned futures.',
 	canonicalPath = '/',
 	lang = defaultLang,
 } = Astro.props;
@@ -69,10 +69,10 @@ const ogLocale = lang === 'zh' ? 'zh_CN' : 'en_US';
 					try { stored = localStorage.getItem('preferred-lang'); } catch (e) {}
 					var browser = String(navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
 					var preferred = stored || browser;
-					var current = location.pathname.split('/')[1] === 'en' ? 'en' : 'zh';
+					var current = location.pathname.split('/')[1] === 'zh' ? 'zh' : 'en';
 					if (preferred !== current) {
-						var rest = current === 'en' ? (location.pathname.slice(3) || '/') : location.pathname;
-						var target = preferred === 'en' ? (rest === '/' ? '/en' : '/en' + rest) : rest;
+						var rest = current === 'zh' ? (location.pathname.slice(3) || '/') : location.pathname;
+						var target = preferred === 'zh' ? (rest === '/' ? '/zh' : '/zh' + rest) : rest;
 						location.replace(target + location.search + location.hash);
 					}
 				} catch (e) {}

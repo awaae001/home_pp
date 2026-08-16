@@ -1,9 +1,9 @@
 import en from "./en.json";
 import zh from "./zh.json";
 
-export const languages = { zh: "中文", en: "English" } as const;
+export const languages = { en: "English", zh: "中文" } as const;
 export type Lang = keyof typeof languages;
-export const defaultLang: Lang = "zh";
+export const defaultLang: Lang = "en";
 
 const dictionaries: Record<Lang, typeof zh> = { zh, en: en as typeof zh };
 

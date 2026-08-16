@@ -38,6 +38,11 @@ export async function initSolarSystem(
   const cameraStats = document.getElementById('camera-stats');
   const flightHud = document.getElementById('flight-hud');
   const mainMask = document.getElementById('main-mask');
+  const solarContainer = document.getElementById('solar-system-container');
+  const flightHudEnabled = solarContainer?.dataset.flightEnabled ?? 'Flight mode on';
+  const flightHudDisabled = solarContainer?.dataset.flightDisabled ?? 'Flight mode off';
+  const cameraLabel = solarContainer?.dataset.cameraLabel ?? 'Camera';
+  const fpsLabel = solarContainer?.dataset.fpsLabel ?? 'FPS';
   let cameraMode: CameraMode = { kind: 'free' };
   let animationId: number | null = null;
   let nextBackgroundFrameAt = performance.now();
@@ -91,8 +96,8 @@ export async function initSolarSystem(
   const updateFlightHud = (fov = context.camera.fov): void => {
     if (flightHud) {
       flightHud.textContent = flightModeEnabled
-        ? `飞行模式已开启 · WASD 移动 · Shift 上升 · Ctrl 下降 · [ ] 视角 ${fov.toFixed(0)}°`
-        : `飞行模式未开启 · 点击右上角“开启飞行”`;
+        ? flightHudEnabled.replace('{fov}', fov.toFixed(0))
+        : flightHudDisabled;
     }
   };
   const flightControls = new FlightControls({
@@ -183,10 +188,10 @@ export async function initSolarSystem(
         const { x, y, z } = context.camera.position;
         const fps = Math.round((renderedFrames * 1000) / statsDuration);
         cameraStats.textContent = [
-          `CAN(X ${x.toFixed(2)} ·`,
+          `${cameraLabel}(X ${x.toFixed(2)} ·`,
           `Y ${y.toFixed(2)} ·`,
           `Z ${z.toFixed(2)} )|`,
-          `FPS ${fps}`,
+          `${fpsLabel} ${fps}`,
         ].join('  ');
       }
       statsStartedAt = timestamp;
