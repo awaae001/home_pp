@@ -43,6 +43,8 @@ export async function initSolarSystem(
   const flightHudDisabled = solarContainer?.dataset.flightDisabled ?? 'Flight mode off';
   const cameraLabel = solarContainer?.dataset.cameraLabel ?? 'Camera';
   const fpsLabel = solarContainer?.dataset.fpsLabel ?? 'FPS';
+  const voyagerRouteLabel = solarContainer?.dataset.voyagerRoute ?? 'Flight path';
+  const voyagerTooltip = solarContainer?.dataset.voyagerTooltip ?? 'Voyager 1 saw a new world, but had long since fallen silent.';
   let cameraMode: CameraMode = { kind: 'free' };
   let animationId: number | null = null;
   let nextBackgroundFrameAt = performance.now();
@@ -64,7 +66,7 @@ export async function initSolarSystem(
 
   targets.push({
     object: voyager.guideLine,
-    tooltip: '航线',
+    tooltip: voyagerRouteLabel,
     priority: -1,
     activate: () => {
       cameraMode = { kind: 'tracking-voyager' };
@@ -73,7 +75,7 @@ export async function initSolarSystem(
   });
   targets.push({
     object: voyager.model,
-    tooltip: '终于，旅行者一号看到了新世界，可惜它早已缄默。',
+    tooltip: voyagerTooltip,
     priority: 1,
     activate: () => {
       window.open(

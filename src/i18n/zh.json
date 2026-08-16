@@ -18,6 +18,8 @@
   "home.flight.status.disabled": "飞行模式未开启 · 点击右上角“开启飞行”",
   "home.camera": "相机",
   "home.fps": "帧率",
+  "home.voyager.route": "航线",
+  "home.voyager.tooltip": "终于，旅行者一号看到了新世界，可惜它早已缄默。",
   "home.solar.loading": "正在下载 Three.js 环境……",
   "home.solar.restoring": "正在恢复星图……",
   "home.solar.model": "正在下载模型……",

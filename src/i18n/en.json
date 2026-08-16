@@ -18,6 +18,8 @@
   "home.flight.status.disabled": "Flight mode off · Click “Enable Flight” in the top right",
   "home.camera": "Camera",
   "home.fps": "FPS",
+  "home.voyager.route": "Flight path",
+  "home.voyager.tooltip": "At last, Voyager 1 saw a new world—sadly, it had long since fallen silent.",
   "home.solar.loading": "Downloading Three.js environment…",
   "home.solar.restoring": "Restoring star map…",
   "home.solar.model": "Downloading model…",
