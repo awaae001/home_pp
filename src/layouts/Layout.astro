@@ -2,31 +2,45 @@
 import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 import Footer from '../components/Footer.astro';
+import { defaultLang, delocalizePath, localizePath, languages, type Lang } from '../i18n/utils';
 
 interface Props {
 	title?: string;
 	description?: string;
 	canonicalPath?: string;
+	lang?: Lang;
 }
 
 const {
 	title = 'awaae001 · Home',
 	description = 'awaae001 的个人主页，介绍我自己，给世界，给访客，给那些该死的未来。',
 	canonicalPath = '/',
+	lang = defaultLang,
 } = Astro.props;
 
 const siteUrl = 'https://awaae001.top';
 const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
+const basePath = delocalizePath(canonicalPath);
 const ogImage = `${siteUrl}/favicon.svg`;
+const htmlLang = lang === 'zh' ? 'zh-CN' : lang;
+const ogLocale = lang === 'zh' ? 'zh_CN' : 'en_US';
 ---
 
 <!doctype html>
-<html lang="zh-CN" transition:animate="fade">
+<html lang={htmlLang} transition:animate="fade">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="canonical" href={canonicalUrl} />
+		{Object.keys(languages).map((l) => (
+			<link
+				rel="alternate"
+				hreflang={l === 'zh' ? 'zh-CN' : l}
+				href={new URL(localizePath(basePath, l as Lang), siteUrl).toString()}
+			/>
+		))}
+		<link rel="alternate" hreflang="x-default" href={new URL(basePath, siteUrl).toString()} />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
 		<meta name="author" content="awaae001" />
@@ -36,7 +50,7 @@ const ogImage = `${siteUrl}/favicon.svg`;
 
 		<meta property="og:type" content="website" />
 		<meta property="og:site_name" content="awaae001" />
-		<meta property="og:locale" content="zh_CN" />
+		<meta property="og:locale" content={ogLocale} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:url" content={canonicalUrl} />
@@ -48,11 +62,27 @@ const ogImage = `${siteUrl}/favicon.svg`;
 		<meta name="twitter:image" content={ogImage} />
 
 		<title>{title}</title>
+		<script is:inline>
+			(function () {
+				try {
+					var stored = null;
+					try { stored = localStorage.getItem('preferred-lang'); } catch (e) {}
+					var browser = String(navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+					var preferred = stored || browser;
+					var current = location.pathname.split('/')[1] === 'en' ? 'en' : 'zh';
+					if (preferred !== current) {
+						var rest = current === 'en' ? (location.pathname.slice(3) || '/') : location.pathname;
+						var target = preferred === 'en' ? (rest === '/' ? '/en' : '/en' + rest) : rest;
+						location.replace(target + location.search + location.hash);
+					}
+				} catch (e) {}
+			})();
+		</script>
 		<ClientRouter />
 	</head>
 	<body>
 		<slot />
-		<Footer />
+		<Footer lang={lang} />
 	</body>
 </html>
 

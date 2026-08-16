@@ -1,36 +1,101 @@
 ---
 import { execFileSync } from "node:child_process";
+import { Icon } from "astro-icon/components";
+import {
+  defaultLang,
+  delocalizePath,
+  languages,
+  localizePath,
+  useTranslations,
+  type Lang,
+} from "../i18n/utils";
+
+interface Props {
+  lang?: Lang;
+}
+
+const { lang = defaultLang } = Astro.props;
+const t = useTranslations(lang);
+const basePath = delocalizePath(Astro.url.pathname);
 
 const startYear = 2023;
 const currentYear = new Date().getFullYear();
 const copyrightYear =
-    currentYear > startYear ? `${startYear}-${currentYear}` : startYear;
+  currentYear > startYear ? `${startYear}-${currentYear}` : startYear;
 const author = "awaae001";
 const commitSha =
-    process.env.CF_PAGES_COMMIT_SHA ??
-    process.env.VERCEL_GIT_COMMIT_SHA ??
-    process.env.GITHUB_SHA;
+  process.env.CF_PAGES_COMMIT_SHA ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.GITHUB_SHA;
 const gitId = commitSha?.slice(0, 7) ?? getLocalGitId();
 
 function getLocalGitId(): string {
-    try {
-        return execFileSync("git", ["rev-parse", "--short=7", "HEAD"], {
-            encoding: "utf8",
-        }).trim();
-    } catch {
-        return "unknown";
-    }
+  try {
+    return execFileSync("git", ["rev-parse", "--short=7", "HEAD"], {
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    return "unknown";
+  }
 }
 ---
 
-<div class="fixed bottom-4 right-4 text-sm text-gray-400 text-right z-20">
-    <span>GitID: {gitId}</span> ·
-    <a href="https://github.com/awaae001/home_pp" target="_blank" class="hover:text-white transition-colors">Github</a> · powered by
+<div
+  class="fixed bottom-4 right-4 text-sm text-gray-400 text-right z-20 flex flex-col gap-1"
+>
+  <div
+    aria-label={t("lang.switch")}
+    class="flex items-center justify-end gap-2"
+  >
+    <Icon name="mdi:translate" class="w-4 h-4 text-gray-500" />
+    {
+      Object.entries(languages).map(([l, label], index) => (
+        <>
+          {index > 0 && <span class="text-gray-600">·</span>}
+          <a
+            href={localizePath(basePath, l as Lang)}
+            data-lang-link={l}
+            aria-current={l === lang ? "true" : undefined}
+            class={
+              l === lang ? "text-white" : "hover:text-white transition-colors"
+            }
+          >
+            {label}
+          </a>
+        </>
+      ))
+    }
+  </div>
+  <div>
+    <span>GitID: {gitId}</span> ·&nbsp;
     <a
-        href="https://astro.build/"
-        target="_blank"
-        class="hover:text-white transition-colors">Astro</a
+      href="https://github.com/awaae001/home_pp"
+      target="_blank"
+      class="hover:text-white transition-colors">Github</a
+    > · powered by
+    <a
+      href="https://astro.build/"
+      target="_blank"
+      class="hover:text-white transition-colors"
+    >
+      &nbsp;Astro</a
     > · theme with NeoSky <br />
     &copy; {copyrightYear}
-    {author} All rights reserved.
+    {author}
+    {t("footer.rights")}
+  </div>
 </div>
+
+<script>
+  // 记住用户手动切换的语言（事件委托，兼容视图过渡换 DOM）
+  document.addEventListener("click", (event) => {
+    const link = (event.target as HTMLElement).closest?.("a[data-lang-link]");
+    if (!link) return;
+    try {
+      localStorage.setItem(
+        "preferred-lang",
+        link.getAttribute("data-lang-link") ?? "",
+      );
+    } catch {}
+  });
+</script>

@@ -1,0 +1,280 @@
+---
+import { Icon } from 'astro-icon/components';
+import Starfield from '../Starfield.astro';
+import Layout from '../../layouts/Layout.astro';
+import { localizePath, useTranslations, type Lang } from '../../i18n/utils';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const greetings = t('about.greetings');
+---
+
+<Layout lang={lang} title={t('about.title')} canonicalPath={localizePath('/about', lang)}>
+	<Starfield />
+
+	<style>
+		.snap-container {
+			-ms-overflow-style: none;
+			scrollbar-width: none;
+		}
+		.snap-container::-webkit-scrollbar {
+			display: none;
+		}
+	</style>
+
+	<div class="fixed top-6 right-6 z-20 flex gap-4" style="animation: reveal-down 500ms ease both;">
+		<a
+			href={localizePath('/', lang)}
+			title={t('common.back')}
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 hover:scale-105 cursor-pointer flex items-center justify-center"
+		>
+			<Icon name="mdi:arrow-left" class="w-4 h-4" />
+		</a>
+	</div>
+
+	<!-- 阅读状态指示器 -->
+	<div class="fixed left-6 md:left-10 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-4 pointer-events-none" style="animation: reveal-right 500ms ease both;">
+		<span class="text-xs tracking-widest text-white/50" style="writing-mode: vertical-rl;">{t('about.progress')}</span>
+		<div class="w-0.5 h-32 md:h-48 bg-white/10 rounded-full relative overflow-hidden">
+			<div id="scroll-indicator" class="absolute top-0 left-0 w-full bg-white/80 rounded-full" style="height: 0%; transition: height 0.15s ease-out;"></div>
+		</div>
+		<span id="scroll-percentage" class="text-xs font-mono text-white/50 mt-1 w-8 text-center">0%</span>
+	</div>
+
+	<div class="snap-container relative z-10 h-dvh w-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
+		<!-- 个人头像 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
+			<img src="/avatar.webp" alt="awaae001" class="w-32 h-32 rounded-full object-cover shadow-lg border-2 border-white/20 hover:scale-105 transition-transform duration-300" />
+
+			<div class="mt-6 text-lg text-white flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+				<span class="text-2xl font-bold">awaae001</span>
+				<span class="hidden sm:inline text-white/30">|</span>
+				<span class="text-gray-300 tracking-wide">{t('about.role')}</span>
+				<span class="hidden sm:inline text-white/30">|</span>
+				<span class="text-gray-300 tracking-wide">{t('about.me')}</span>
+			</div>
+		</section>
+
+		<!-- 契机与故事 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="max-w-3xl w-full flex flex-col gap-8 relative px-6 md:px-12">
+				<!-- 装饰性引号 -->
+				<div class="absolute -top-12 left-0 text-7xl text-white/5 font-serif select-none pointer-events-none">"</div>
+
+				<div class="flex flex-col gap-8 z-10">
+					<div class="flex items-center gap-4">
+						<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase">{t('about.story.title')}</h2>
+						<div class="flex-1 h-px bg-linear-to-r from-white/20 to-transparent"></div>
+					</div>
+
+					<div class="space-y-6 text-gray-300/80 text-base md:text-lg leading-relaxed font-light tracking-wide">
+						<p class="transition-colors duration-500 hover:text-white flex items-center gap-2">
+							{t('about.story.p1.pre')} <span class="text-white/90 font-medium">2023</span> {t('about.story.p1.mid')}
+							<span class="inline-flex items-center gap-1 text-blue-300/80">
+								<Icon name="simple-icons:hexo" class="w-5 h-5" />
+								Hexo
+							</span>
+							{t('about.story.p1.post')}
+						</p>
+						<p class="transition-colors duration-500 hover:text-white">
+							{t('about.story.p2.pre')}<span class="text-white/90">{t('about.story.p2.highlight')}</span>{t('about.story.p2.mid')}<br>
+							{t('about.story.p2.post')}
+						</p>
+						<p class="transition-colors duration-500 hover:text-white">
+							{t('about.story.p3.pre')}<br>
+							{t('about.story.p3.mid1')} <span class="text-white/90 font-medium tracking-widest">AI</span> {t('about.story.p3.mid2')}<span class="text-white/90">{t('about.story.p3.word1')}</span>{t('about.story.p3.sep1')}<span class="text-white/90">{t('about.story.p3.word2')}</span>{t('about.story.p3.sep2')}<span class="text-white/90">{t('about.story.p3.word3')}</span>{t('about.story.p3.post')}
+						</p>
+					</div>
+				</div>
+
+				<div class="absolute -bottom-16 right-0 text-7xl text-white/5 font-serif select-none pointer-events-none transform rotate-180">"</div>
+			</div>
+		</section>
+
+		<!-- 语言和技术 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="flex flex-col md:flex-row items-center md:items-start justify-center gap-12 md:gap-24 w-full max-w-4xl">
+				<div class="flex flex-col gap-10 w-full md:w-1/2 items-center md:items-end text-center md:text-right">
+					<div class="flex flex-col items-center md:items-end gap-5">
+						<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">{t('about.languages.title')}</h2>
+						<div class="flex flex-wrap justify-center md:justify-end gap-3 md:gap-5">
+							<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">中文</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">English</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">한국어</span>
+						</div>
+					</div>
+
+					<div class="w-12 h-px bg-white/20"></div>
+					<div class="flex flex-col items-center md:items-end gap-5">
+						<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">{t('about.codelangs.title')}</h2>
+						<div class="flex flex-wrap justify-center md:justify-end gap-3 md:gap-5">
+							<span class="text-lg md:text-xl text-blue-300 hover:text-blue-200 transition-colors">js/ts</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-yellow-300 hover:text-yellow-200 transition-colors">py</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-cyan-300 hover:text-cyan-200 transition-colors">go</span>
+							<span class="text-gray-500">/</span>
+							<span class="text-lg md:text-xl text-orange-300 hover:text-orange-200 transition-colors">rust</span>
+						</div>
+					</div>
+				</div>
+
+
+				<div class="hidden md:block w-px h-48 bg-white/10"></div>
+				<div class="flex flex-col gap-10 w-full md:w-1/2 items-center md:items-start text-center md:text-left">
+					<div class="flex flex-col items-center md:items-start gap-8">
+						<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">{t('about.tools.title')}</h2>
+						<div class="grid grid-cols-4 gap-6 md:gap-8 opacity-80">
+							<Icon name="mdi:git" class="w-10 h-10 text-[#F05032] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Git" />
+							<Icon name="mdi:github" class="w-10 h-10 text-white hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="GitHub" />
+							<Icon name="mdi:docker" class="w-10 h-10 text-[#2496ED] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Docker" />
+							<Icon name="mdi:linux" class="w-10 h-10 text-white hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Linux" />
+							<Icon name="mdi:microsoft-visual-studio-code" class="w-10 h-10 text-[#007ACC] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="VS Code" />
+							<Icon name="mdi:database" class="w-10 h-10 text-gray-300 hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Database" />
+							<Icon name="simple-icons:cloudflare" class="w-10 h-10 text-[#F38020] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Cloudflare" />
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- 生活状态与爱好 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="flex flex-col items-center gap-12 w-full max-w-4xl">
+				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase relative">
+					{t('about.daily.title')}
+					<div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-px bg-white/30"></div>
+				</h2>
+
+				<div class="flex flex-wrap justify-center gap-10 md:gap-16 mt-4 max-w-2xl">
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:controller-classic" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.games')}</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:shoe-sneaker" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.walk')}</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:food-apple" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.snacks')}</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:book-open-page-variant" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.reading')}</span>
+					</div>
+
+					<div class="group flex flex-col items-center gap-4 cursor-pointer">
+						<Icon name="mdi:weather-pouring" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+						<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.whining')}</span>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- 联系我 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="flex flex-col items-center gap-12 w-full max-w-4xl">
+				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase">{t('about.contact.title')}</h2>
+
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full justify-items-center">
+					<a href="https://t.me/jiuci_world" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center gap-4 group">
+						<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-[#2AABEE]/20 transition-all duration-300">
+							<Icon name="mdi:telegram" class="w-10 h-10 text-[#2AABEE] group-hover:scale-110 transition-transform" title="Telegram" />
+						</div>
+						<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">@jiuci_world</span>
+					</a>
+
+					<a href="mailto:i@neosora.cc" class="flex flex-col items-center gap-4 group">
+						<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
+							<Icon name="mdi:email" class="w-10 h-10 text-white group-hover:scale-110 transition-transform" title="Email" />
+						</div>
+						<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">i@neosora.cc</span>
+					</a>
+
+					<a href="https://github.com/awaae001" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center gap-4 group">
+						<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
+							<Icon name="mdi:github" class="w-10 h-10 text-white group-hover:scale-110 transition-transform" title="GitHub" />
+						</div>
+						<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">awaae001</span>
+					</a>
+				</div>
+			</div>
+		</section>
+
+		<!-- 最后 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
+			<div class="max-w-3xl w-full flex flex-col items-center text-center gap-12 relative px-6 md:px-12">
+				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-[0.3em] uppercase relative">
+					// EOF
+				</h2>
+			</div>
+		</section>
+
+		<!-- 结语 -->
+		<section class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
+			<div class="text-center relative flex flex-col gap-6">
+				<p id="greeting-text" data-greetings={JSON.stringify(greetings)} class="text-sm md:text-base text-white/40 tracking-[0.5em] md:tracking-[0.8em] uppercase pr-[-0.5em] transition-opacity duration-1000 opacity-0">
+					{greetings[0]}
+				</p>
+				<p class="text-xl md:text-3xl font-light text-white/80 tracking-[0.2em] md:tracking-[0.3em] font-serif italic" style="text-shadow: 0 0 20px rgba(255,255,255,0.3);">
+					{t('about.closing')}
+				</p>
+				<div class="w-12 h-px bg-white/20 mx-auto mt-2"></div>
+			</div>
+		</section>
+	</div>
+
+	<script>
+		const container = document.querySelector('.snap-container');
+		const indicator = document.getElementById('scroll-indicator');
+		const percentageText = document.getElementById('scroll-percentage');
+
+		if (container && indicator) {
+			const updateScroll = () => {
+				const scrollTop = container.scrollTop;
+				const scrollHeight = container.scrollHeight - container.clientHeight;
+				const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+				indicator.style.height = `${progress}%`;
+				if (percentageText) {
+					percentageText.textContent = `${Math.round(progress)}%`;
+				}
+			};
+
+			container.addEventListener('scroll', updateScroll);
+			updateScroll();
+		}
+
+		// 动态文案（语言由服务端渲染进 data-greetings）
+		const greetingEl = document.getElementById('greeting-text');
+		const greetings: string[] = JSON.parse(greetingEl?.dataset.greetings ?? '[]');
+		if (greetingEl && greetings.length > 0) {
+			greetingEl.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+			const observer = new IntersectionObserver((entries) => {
+				entries.forEach(entry => {
+					if (entry.isIntersecting) {
+						greetingEl.classList.remove('opacity-0');
+					} else {
+						greetingEl.classList.add('opacity-0');
+						setTimeout(() => {
+							if(greetingEl.classList.contains('opacity-0')) {
+								greetingEl.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+							}
+						}, 1000);
+					}
+				});
+			}, { threshold: 0.5 });
+
+			observer.observe(greetingEl);
+		}
+	</script>
+</Layout>

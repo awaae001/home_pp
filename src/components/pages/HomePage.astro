@@ -1,0 +1,201 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SolarSystem from "../SolarSystem.astro";
+import Link from "../ui/Link.astro";
+import { Icon } from "astro-icon/components";
+import { localizePath, useTranslations, type Lang } from "../../i18n/utils";
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<Layout
+	lang={lang}
+	title={t("site.title")}
+	description={t("site.description")}
+	canonicalPath={localizePath("/", lang)}
+>
+	<SolarSystem />
+	<div id="main-mask" class="fixed inset-0 z-10 bg-[#0d1117]/60 backdrop-blur-[2px] transition-opacity duration-500"></div>
+	<div id="main-content" class="relative z-20 flex flex-col h-screen transition-opacity duration-500">
+		<div class="grow">
+			<div class="relative w-full h-full overflow-hidden font-sans">
+				<main class="flex flex-col items-center justify-center h-full px-4 text-right">
+					<section class="space-y-8">
+						<h1 class="text-1xl md:text-5xl font-bold text-white tracking-tight animate-fade-in">
+							{t("home.greeting")}
+						</h1>
+						<p class="text-base md:text-lg text-gray-300 animate-fade-in opacity-0" style="animation-delay: 0.15s; animation-fill-mode: forwards;">
+							{t("home.tagline")}
+						</p>
+
+						<div class="flex flex-wrap items-center justify-end gap-4 animate-fade-in-up">
+							<Link
+								text={t("nav.blog")}
+								href="https://blog.awaae001.top"
+								icon="mdi:pen"
+								variant="capsule"
+								external={true}
+							/>
+							<Link
+								id="btn-website"
+								text={t("nav.starMap")}
+								icon="mdi:web"
+								variant="article"
+							/>
+							<Link
+								id="btn-projects"
+								text={t("nav.projects")}
+								href={localizePath("/projects", lang)}
+								icon="mdi:rocket-launch-outline"
+								variant="article"
+							/>
+							<Link
+								text={t("nav.about")}
+								href={localizePath("/about", lang)}
+								variant="article"
+							/>
+						</div>
+					</section>
+				</main>
+			</div>
+		</div>
+	</div>
+
+	<div class="fixed top-6 right-6 z-20 flex gap-4">
+		<button
+			id="btn-toggle-flight"
+			title={t("home.flight.enableTitle")}
+			data-enabled="false"
+			data-label-enable={t("home.flight.enable")}
+			data-label-disable={t("home.flight.disable")}
+			data-title-enable={t("home.flight.enableTitle")}
+			data-title-disable={t("home.flight.disableTitle")}
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center gap-2"
+		>
+			<Icon name="mdi:airplane" class="w-4 h-4" />
+			<span id="flight-mode-label">{t("home.flight.enable")}</span>
+		</button>
+		<button
+			id="btn-reset-view"
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center gap-2"
+		>
+			<Icon name="mdi:refresh" class="w-4 h-4" />
+			{t("home.resetView")}
+		</button>
+		<button
+			id="btn-back"
+			title={t("common.back")}
+			class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 opacity-0 pointer-events-none hover:scale-105 cursor-pointer flex items-center justify-center"
+		>
+			<Icon name="mdi:arrow-left" class="w-4 h-4" />
+		</button>
+	</div>
+</Layout>
+
+<style>
+	@keyframes fadeIn {
+		from { opacity: 0; transform: translateY(-10px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes fadeInUp {
+		from { opacity: 0; transform: translateY(10px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	.animate-fade-in {
+		animation: fadeIn var(--motion-duration-slow) var(--motion-ease) forwards;
+	}
+
+	.animate-fade-in-up {
+		animation: fadeInUp var(--motion-duration-slow) var(--motion-ease) 240ms forwards;
+		opacity: 0;
+	}
+</style>
+
+<script>
+	import { navigate } from 'astro:transitions/client';
+
+	document.addEventListener('astro:page-load', () => {
+		const btnWebsite = document.getElementById('btn-website');
+		const btnProjects = document.getElementById('btn-projects');
+		const btnBack = document.getElementById('btn-back');
+		const btnReset = document.getElementById('btn-reset-view');
+		const btnToggleFlight = document.getElementById('btn-toggle-flight');
+		const flightModeLabel = document.getElementById('flight-mode-label');
+		const mainContent = document.getElementById('main-content');
+		const mainMask = document.getElementById('main-mask');
+
+		if (btnWebsite && btnBack && btnReset && btnToggleFlight && mainContent && mainMask) {
+			const setFlightMode = (enabled: boolean) => {
+				btnToggleFlight.dataset.enabled = String(enabled);
+				btnToggleFlight.title = enabled
+					? (btnToggleFlight.dataset.titleDisable ?? '')
+					: (btnToggleFlight.dataset.titleEnable ?? '');
+				if (flightModeLabel) {
+					flightModeLabel.textContent = enabled
+						? (btnToggleFlight.dataset.labelDisable ?? '')
+						: (btnToggleFlight.dataset.labelEnable ?? '');
+				}
+				window.dispatchEvent(new CustomEvent('solar-flight-mode-change', {
+					detail: { enabled },
+				}));
+			};
+
+			btnWebsite.addEventListener('click', (e) => {
+				e.preventDefault();
+				mainContent.style.opacity = '0';
+				mainContent.style.pointerEvents = 'none';
+				mainMask.style.opacity = '0';
+				mainMask.style.pointerEvents = 'none';
+
+				btnBack.style.opacity = '1';
+				btnBack.style.pointerEvents = 'auto';
+				btnToggleFlight.style.opacity = '1';
+				btnToggleFlight.style.pointerEvents = 'auto';
+				btnReset.style.opacity = '1';
+				btnReset.style.pointerEvents = 'auto';
+			});
+
+			btnToggleFlight.addEventListener('click', () => {
+				setFlightMode(btnToggleFlight.dataset.enabled !== 'true');
+			});
+
+			btnBack.addEventListener('click', () => {
+				setFlightMode(false);
+				mainContent.style.opacity = '1';
+				mainContent.style.pointerEvents = 'auto';
+				mainMask.style.opacity = '1';
+				mainMask.style.pointerEvents = 'auto';
+
+				btnBack.style.opacity = '0';
+				btnBack.style.pointerEvents = 'none';
+				btnToggleFlight.style.opacity = '0';
+				btnToggleFlight.style.pointerEvents = 'none';
+				btnReset.style.opacity = '0';
+				btnReset.style.pointerEvents = 'none';
+			});
+		}
+
+		if (btnProjects && !btnProjects.dataset.transitionReady) {
+			btnProjects.dataset.transitionReady = 'true';
+			btnProjects.addEventListener('click', async (event) => {
+				event.preventDefault();
+
+				const target = btnProjects.getAttribute('href') ?? '/projects';
+				const solarSystem = document.getElementById('solar-system-container');
+				btnProjects.style.pointerEvents = 'none';
+				mainContent?.classList.add('project-transition-content');
+				solarSystem?.classList.add('project-transition-space');
+
+				await new Promise((resolve) => window.setTimeout(resolve, 720));
+				await navigate(target);
+			});
+		}
+	});
+</script>
