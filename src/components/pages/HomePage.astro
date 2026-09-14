@@ -20,7 +20,7 @@ const t = useTranslations(lang);
 	canonicalPath={localizePath("/", lang)}
 >
 	<SolarSystem lang={lang} />
-	<div id="main-mask" class="fixed inset-0 z-10 bg-[#0d1117]/60 backdrop-blur-[2px] transition-opacity duration-500"></div>
+	<div id="main-mask" class="fixed inset-0 z-10 opacity-75 backdrop-blur-[3px] transition-opacity duration-500"></div>
 	<div id="main-content" class="relative z-20 flex flex-col h-screen transition-opacity duration-500">
 		<div class="grow">
 			<div class="relative w-full h-full overflow-hidden font-sans">
@@ -170,7 +170,7 @@ const t = useTranslations(lang);
 				setFlightMode(false);
 				mainContent.style.opacity = '1';
 				mainContent.style.pointerEvents = 'auto';
-				mainMask.style.opacity = '1';
+				mainMask.style.opacity = '0.75';
 				mainMask.style.pointerEvents = 'auto';
 
 				btnBack.style.opacity = '0';

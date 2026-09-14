@@ -5,6 +5,7 @@ export class AsteroidBelt {
   readonly object: THREE.Group;
   private readonly config: AsteroidBeltConfig;
   private readonly particles: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+  private readonly retrogradeParticles: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
 
   constructor(config: AsteroidBeltConfig) {
     this.config = config;
@@ -12,20 +13,24 @@ export class AsteroidBelt {
     this.object.name = config.name;
     this.object.position.set(...config.position);
     this.object.rotation.set(...config.rotation);
-    this.particles = this.createParticles();
-    this.object.add(this.particles);
+    const retrogradeCount = Math.round(config.particleCount * config.retrogradeFraction);
+    this.particles = this.createParticles(config.particleCount - retrogradeCount);
+    this.retrogradeParticles = this.createParticles(retrogradeCount);
+    this.object.add(this.particles, this.retrogradeParticles);
   }
 
   update(elapsed: number, delta: number): void {
     this.particles.rotation.y += this.config.rotationSpeed * delta * 60;
+    this.retrogradeParticles.rotation.y -= this.config.rotationSpeed * delta * 60;
     this.particles.material.uniforms.time.value = elapsed;
+    this.retrogradeParticles.material.uniforms.time.value = elapsed;
   }
 
-  private createParticles(): THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial> {
-    const positions = new Float32Array(this.config.particleCount * 3);
-    const phases = new Float32Array(this.config.particleCount);
+  private createParticles(count: number): THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial> {
+    const positions = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
 
-    for (let index = 0; index < this.config.particleCount; index += 1) {
+    for (let index = 0; index < count; index += 1) {
       const angle = Math.random() * Math.PI * 2;
       const radius = THREE.MathUtils.lerp(
         this.config.innerRadius,

@@ -18,6 +18,7 @@ export interface AsteroidBeltConfig {
   name: string;
   color: number;
   particleCount: number;
+  retrogradeFraction: number;
   particleSize: number;
   innerRadius: number;
   outerRadius: number;
@@ -55,6 +56,7 @@ export const planetsData: SolarObjectConfig[] = [
     name: 'Main Belt',
     color: 0x8899aa,
     particleCount: 2000,
+    retrogradeFraction: 0.02,
     particleSize: 0.12,
     innerRadius: 7,
     outerRadius: 9,
