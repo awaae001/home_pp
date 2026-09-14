@@ -8,14 +8,6 @@
   --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 
-::view-transition-old(root) {
-  animation: site-fade-out var(--motion-duration) var(--motion-ease-exit) both;
-}
-
-::view-transition-new(root) {
-  animation: site-fade-in var(--motion-duration) var(--motion-ease) both;
-}
-
 @keyframes site-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }

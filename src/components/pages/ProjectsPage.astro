@@ -31,7 +31,7 @@ const statusLabels = {
 >
   <Starfield />
 
-  <div class="fixed top-6 right-6 z-20 flex gap-4" style="animation: reveal-down var(--motion-duration) var(--motion-ease) both;">
+  <div class="fixed top-6 right-6 z-20 flex gap-4" style="animation: reveal-fade var(--motion-duration) var(--motion-ease) both;">
     <a
       href={localizePath("/", lang)}
       title={t("common.back")}
@@ -140,14 +140,14 @@ const statusLabels = {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.62rem;
     letter-spacing: 0.13em;
-    animation: reveal-up var(--motion-duration) var(--motion-ease) 100ms both;
+    animation: reveal-fade var(--motion-duration) var(--motion-ease) 100ms both;
   }
 
   .console-row {
     position: relative;
     padding: 1.5rem 1.25rem;
     border-bottom: 1px solid var(--line);
-    animation: reveal-up var(--motion-duration) var(--motion-ease) var(--enter-delay) both;
+    animation: reveal-fade var(--motion-duration) var(--motion-ease) var(--enter-delay) both;
     transition: background var(--motion-duration-fast) var(--motion-ease);
   }
 
@@ -253,25 +253,12 @@ const statusLabels = {
     transform: translateY(-2px);
   }
 
-  @keyframes reveal-up {
+  @keyframes reveal-fade {
     from {
       opacity: 0;
-      transform: translateY(18px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes reveal-down {
-    from {
-      opacity: 0;
-      transform: translateY(-12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
     }
   }
 

@@ -119,11 +119,9 @@ const t = useTranslations(lang);
 </style>
 
 <script>
-	import { navigate } from 'astro:transitions/client';
 
 	document.addEventListener('astro:page-load', () => {
 		const btnWebsite = document.getElementById('btn-website');
-		const btnProjects = document.getElementById('btn-projects');
 		const btnBack = document.getElementById('btn-back');
 		const btnReset = document.getElementById('btn-reset-view');
 		const btnToggleFlight = document.getElementById('btn-toggle-flight');
@@ -182,20 +180,5 @@ const t = useTranslations(lang);
 			});
 		}
 
-		if (btnProjects && !btnProjects.dataset.transitionReady) {
-			btnProjects.dataset.transitionReady = 'true';
-			btnProjects.addEventListener('click', async (event) => {
-				event.preventDefault();
-
-				const target = btnProjects.getAttribute('href') ?? '/projects';
-				const solarSystem = document.getElementById('solar-system-container');
-				btnProjects.style.pointerEvents = 'none';
-				mainContent?.classList.add('project-transition-content');
-				solarSystem?.classList.add('project-transition-space');
-
-				await new Promise((resolve) => window.setTimeout(resolve, 720));
-				await navigate(target);
-			});
-		}
 	});
 </script>

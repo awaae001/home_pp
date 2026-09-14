@@ -128,35 +128,6 @@ const t = useTranslations(lang);
     overflow: hidden;
   }
 
-  :global(.project-transition-space) {
-    animation: depart-upward var(--motion-duration-slow) var(--motion-ease) forwards;
-    will-change: transform, opacity;
-  }
-
-  :global(.project-transition-content) {
-    animation: fade-for-departure var(--motion-duration) var(--motion-ease-exit) forwards;
-    pointer-events: none;
-  }
-
-  @keyframes depart-upward {
-    from {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-    to {
-      opacity: 0;
-      transform: translateY(-32vh) scale(1.08);
-    }
-  }
-
-  @keyframes fade-for-departure {
-    to {
-      opacity: 0;
-      transform: translateY(-24px);
-    }
-  }
-
-
   #solar-canvas {
     display: block;
     width: 100%;

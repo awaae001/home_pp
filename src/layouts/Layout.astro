@@ -1,5 +1,5 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import { ClientRouter, fade } from 'astro:transitions';
 import '../styles/global.css';
 import Footer from '../components/Footer.astro';
 import { defaultLang, delocalizePath, localizePath, languages, type Lang } from '../i18n/utils';
@@ -27,7 +27,7 @@ const ogLocale = lang === 'zh' ? 'zh_CN' : 'en_US';
 ---
 
 <!doctype html>
-<html lang={htmlLang} transition:animate="fade">
+<html lang={htmlLang} transition:animate={fade({ duration: 'var(--motion-duration)' })}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
