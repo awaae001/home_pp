@@ -10,12 +10,12 @@
   },
   "dependencies": {
     "@iconify-json/mdi": "^1.2.3",
-    "@iconify-json/simple-icons": "^1.2.95",
+    "@iconify-json/simple-icons": "^1.2.97",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/three": "^0.185.4",
-    "astro": "^7.3.1",
+    "@types/three": "^0.186.0",
+    "astro": "^7.3.4",
     "astro-icon": "^1.2.0",
     "tailwindcss": "^4.3.3",
-    "three": "^0.185.1"
+    "three": "^0.186.0"
   }
 }
