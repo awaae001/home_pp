@@ -1,0 +1,61 @@
+---
+import ToolsLayout from "../../layouts/ToolsLayout.astro";
+---
+
+<ToolsLayout
+	title="EXE 图标提取器 · 工具箱"
+	description="从 Windows EXE 或 DLL 文件提取图标。"
+	heading="EXE 图标提取器"
+>
+	<section class="grid w-full gap-6">
+		<p class="text-gray-400">
+			上传 Windows EXE 或 DLL，直接提取其中的应用图标并下载为 ICO。
+		</p>
+
+		<div class="grid gap-5" data-exe-icon-extractor>
+			<label
+				class="grid min-h-52 cursor-pointer place-items-center gap-1 rounded-2xl border-2 border-dashed border-white/15 bg-white/5 p-7 text-center transition hover:border-white/30 hover:bg-white/10"
+				for="exe-input"
+			>
+				<input
+					id="exe-input"
+					class="sr-only"
+					type="file"
+					accept=".exe,.dll,application/vnd.microsoft.portable-executable"
+				/>
+				<span class="text-lg font-bold text-white">选择 EXE / DLL 文件</span>
+				<span class="text-sm text-gray-400">提取内置图标，导出为 ICO</span>
+			</label>
+
+			<div
+				class="flex flex-col items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 sm:flex-row sm:items-center"
+				data-preview-panel
+				hidden
+			>
+				<img
+					class="size-16 rounded-xl bg-[conic-gradient(#2a3140_25%,transparent_0_50%,#2a3140_0_75%,transparent_0)] bg-size-[14px_14px]"
+					data-icon-preview
+					alt="提取的图标预览"
+				/>
+				<div class="grid gap-1">
+					<strong class="break-all text-white" data-file-name></strong>
+					<p class="text-sm text-gray-400" data-status-text>正在读取资源…</p>
+					<a
+						class="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0d1117] transition hover:bg-gray-300"
+						data-download-link
+						download
+						hidden>下载 ICO 图标</a
+					>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<script>
+		import { initializeExeIconExtractor } from "../../scripts/tools/exe-icon-extractor";
+
+		document.addEventListener("astro:page-load", () => {
+			initializeExeIconExtractor();
+		});
+	</script>
+</ToolsLayout>

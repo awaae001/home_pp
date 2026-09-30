@@ -1,0 +1,152 @@
+---
+import ToolsLayout from "../../layouts/ToolsLayout.astro";
+
+const inputClass =
+	"w-full rounded-lg border border-white/15 bg-white/5 p-3 text-gray-100 outline-none transition placeholder:text-gray-600 focus:border-white/40";
+---
+
+<ToolsLayout
+	title="字符串打码 · 工具箱"
+	description="保留字符串开头和符号结构，使用星号或 X 打码。"
+	heading="字符串打码"
+>
+	<section class="grid w-full gap-6">
+		<p class="text-gray-400">
+			保留开头，其余内容逐字打码，可保留 UUID等字符串的符号结构。
+		</p>
+		<form class="grid gap-5" id="mask-form">
+			<label class="grid gap-2 font-medium text-gray-200" for="source">
+				原始字符串
+				<textarea
+					id="source"
+					rows="4"
+					class={`${inputClass} font-mono`}
+					placeholder="4bea5cca-0b27-4490-a780-f46086631dad"
+					spellcheck="false"></textarea>
+			</label>
+			<div class="grid gap-4 sm:grid-cols-3">
+				<label class="grid gap-2 font-medium text-gray-200" for="keep">
+					保留开头字符数
+					<input
+						id="keep"
+						type="number"
+						min="0"
+						max="100000"
+						step="1"
+						value="2"
+						required
+						class={inputClass}
+					/>
+				</label>
+				<label class="grid gap-2 font-medium text-gray-200" for="count">
+					码符数量
+					<input
+						id="count"
+						type="number"
+						min="0"
+						max="1000"
+						step="1"
+						value="0"
+						required
+						class={inputClass}
+					/>
+				</label>
+				<label class="grid gap-2 font-medium text-gray-200" for="symbol">
+					码符
+					<select id="symbol" class={inputClass}>
+						<option value="*">*</option>
+						<option value="X">X</option>
+					</select>
+				</label>
+			</div>
+			<label class="flex items-center gap-2 font-medium text-gray-200">
+				<input
+					id="preserve-symbols"
+					type="checkbox"
+					class="size-4 accent-white"
+					checked
+				/>
+				保留符号（只打码英文字母和数字，- / .
+				等其他字符原样保留；不勾选则一并打码）
+			</label>
+			<p class="text-sm leading-relaxed text-gray-500">
+				码符数量为 0 时不截断，按剩余字符逐字打码；大于 0时最多输出指定数量的码符（保留的符号不计入数量，不足不补齐）。
+				<br/>
+				例如 UUID保留开头 2 个字符、保留符号、数量 0 → 4b******-****-****-****-************。
+			</p>
+			<label class="grid gap-2 font-medium text-gray-200" for="result">
+				打码结果
+				<textarea
+					id="result"
+					rows="3"
+					readonly
+					class={`${inputClass} font-mono`}
+					placeholder="输入字符串后点击「生成」"
+					aria-live="polite"></textarea>
+			</label>
+			<div class="flex items-center gap-4">
+				<button
+					type="submit"
+					class="cursor-pointer rounded-full bg-white px-5 py-2.5 font-bold text-[#0d1117] transition hover:bg-gray-300"
+					>生成</button
+				>
+				<button
+					id="copy"
+					type="button"
+					disabled
+					class="cursor-pointer rounded-full border border-white/20 bg-white/10 px-5 py-2.5 font-bold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+					>复制结果</button
+				>
+				<span id="status" role="status" class="text-sm text-gray-500"></span>
+			</div>
+		</form>
+	</section>
+</ToolsLayout>
+
+<script>
+	import { maskString } from "../../scripts/tools/string-mask";
+
+  document.addEventListener("astro:page-load", () => {
+    const form = document.querySelector<HTMLFormElement>("#mask-form");
+    const source = document.querySelector<HTMLTextAreaElement>("#source");
+    const keep = document.querySelector<HTMLInputElement>("#keep");
+    const count = document.querySelector<HTMLInputElement>("#count");
+    const symbol = document.querySelector<HTMLSelectElement>("#symbol");
+    const preserve = document.querySelector<HTMLInputElement>("#preserve-symbols");
+    const result = document.querySelector<HTMLTextAreaElement>("#result");
+    const copy = document.querySelector<HTMLButtonElement>("#copy");
+    const status = document.querySelector<HTMLElement>("#status");
+    if (!form || !source || !keep || !count || !symbol || !preserve || !result || !copy || !status) return;
+
+    form.addEventListener("input", () => {
+      result.value = "";
+      copy.disabled = true;
+      status.textContent = "请点击「生成」更新结果。";
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      status.textContent = "";
+      if (!form.checkValidity()) {
+        result.value = "";
+        copy.disabled = true;
+        status.textContent = "请输入有效的整数：保留字符数 0–100000，码符数量 0–1000。";
+        return;
+      }
+      result.value = maskString(source.value, keep.valueAsNumber, count.valueAsNumber, symbol.value === "X" ? "X" : "*", preserve.checked);
+      copy.disabled = !result.value;
+      status.textContent = result.value ? "已生成" : "请输入字符串。";
+    });
+
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(result.value);
+        status.textContent = "已复制";
+      } catch {
+        result.focus();
+        result.select();
+        status.textContent = "无法自动复制，请手动复制已选中的结果。";
+      }
+    });
+  });
+</script>

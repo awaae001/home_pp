@@ -1,24 +1,44 @@
 ---
 // Mounts the site's shared deep-space background.
+// `persist` 用于带 ClientRouter 的页面组（如工具箱）：星空在软导航间保持运行，
+// 不会随页面切换重启。
+interface Props {
+  persist?: boolean;
+}
+
+const { persist = false } = Astro.props;
 ---
 
-<div class="starfield" aria-hidden="true">
-  <canvas id="project-starfield"></canvas>
-</div>
+{
+  persist ? (
+    <div class="starfield" data-persist aria-hidden="true" transition:persist>
+      <canvas id="project-starfield"></canvas>
+    </div>
+  ) : (
+    <div class="starfield" aria-hidden="true">
+      <canvas id="project-starfield"></canvas>
+    </div>
+  )
+}
 
 <script>
   let disposeStarfield: (() => void) | undefined;
   let loadGeneration = 0;
 
-  document.addEventListener("astro:page-load", async () => {
-    disposeStarfield?.();
-    disposeStarfield = undefined;
-
-    const generation = ++loadGeneration;
+  async function boot() {
     const canvas = document.getElementById("project-starfield");
     if (!(canvas instanceof HTMLCanvasElement)) {
       return;
     }
+    // 持久化的画布在软导航间存活并保持运行，无需重启。
+    if (canvas.dataset.running === "true") {
+      return;
+    }
+
+    disposeStarfield?.();
+    disposeStarfield = undefined;
+
+    const generation = ++loadGeneration;
 
     const { initStarfield } = await import("../scripts/starfield");
     if (generation !== loadGeneration || !canvas.isConnected) {
@@ -26,10 +46,26 @@
     }
 
     disposeStarfield = initStarfield(canvas);
+    canvas.dataset.running = "true";
     canvas.classList.add('is-ready');
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    // 导航到了没有星空的页面（持久化元素未被保留）：停掉动画循环。
+    if (!document.getElementById("project-starfield")) {
+      loadGeneration += 1;
+      disposeStarfield?.();
+      disposeStarfield = undefined;
+      return;
+    }
+    void boot();
   });
 
   document.addEventListener("astro:before-swap", () => {
+    // 持久化星空在软导航中存活，跳过本次清理。
+    if (document.querySelector(".starfield")?.hasAttribute("data-persist")) {
+      return;
+    }
     loadGeneration += 1;
     disposeStarfield?.();
     disposeStarfield = undefined;

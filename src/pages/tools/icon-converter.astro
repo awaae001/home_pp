@@ -1,0 +1,215 @@
+---
+import ToolsLayout from "../../layouts/ToolsLayout.astro";
+---
+
+<ToolsLayout
+	title="Icon 转换器 · 工具箱"
+	description="把 JPG 或 PNG 图片转换为网站 favicon.ico。"
+	heading="Icon 转换器"
+>
+	<section class="grid w-full gap-6">
+		<p class="text-gray-400">
+			选择一张 JPG 或 PNG 图片，一键生成
+			favicon.ico，适合快速给网站补一个浏览器标签图标。
+		</p>
+
+		<div class="grid gap-5" data-icon-converter>
+			<label
+				class="grid min-h-52 cursor-pointer place-items-center gap-1 rounded-2xl border-2 border-dashed border-white/15 bg-white/5 p-7 text-center transition hover:border-white/30 hover:bg-white/10"
+				for="icon-input"
+			>
+				<input
+					id="icon-input"
+					class="sr-only"
+					type="file"
+					accept="image/png,image/jpeg"
+				/>
+				<span class="text-lg font-bold text-white">选择 JPG / PNG 图片</span>
+				<span class="text-sm text-gray-400"
+					>建议使用正方形图片；非正方形会居中裁切。</span
+				>
+			</label>
+
+			<div
+				class="flex flex-col items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 sm:flex-row sm:items-center"
+				data-preview-panel
+				hidden
+			>
+				<canvas
+					class="size-24 rounded-2xl bg-[conic-gradient(#2a3140_25%,transparent_0_50%,#2a3140_0_75%,transparent_0)] bg-size-[18px_18px]"
+					data-preview-canvas
+					width="96"
+					height="96"
+					aria-label="icon 预览"></canvas>
+				<div class="grid gap-1">
+					<strong class="text-white" data-file-name></strong>
+					<p class="text-sm text-gray-400" data-status-text>
+						准备生成 favicon.ico
+					</p>
+					<a
+						class="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0d1117] transition hover:bg-gray-300"
+						data-download-link
+						download="favicon.ico"
+						hidden>下载 favicon.ico</a
+					>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<script>
+		type IcoImage = {
+			size: number;
+			bytes: Uint8Array;
+		};
+
+		const sizes = [16, 32, 48, 64, 128, 256];
+
+		document.addEventListener("astro:page-load", () => {
+			const converter = document.querySelector<HTMLElement>(
+				"[data-icon-converter]",
+			);
+			const input = converter?.querySelector<HTMLInputElement>("input");
+			const previewPanel = converter?.querySelector<HTMLElement>(
+				"[data-preview-panel]",
+			);
+			const previewCanvas = converter?.querySelector<HTMLCanvasElement>(
+				"[data-preview-canvas]",
+			);
+			const fileName = converter?.querySelector<HTMLElement>("[data-file-name]");
+			const statusText =
+				converter?.querySelector<HTMLParagraphElement>("[data-status-text]");
+			const downloadLink = converter?.querySelector<HTMLAnchorElement>(
+				"[data-download-link]",
+			);
+
+			input?.addEventListener("change", async () => {
+			const file = input.files?.[0];
+			if (
+				!file ||
+				!previewPanel ||
+				!previewCanvas ||
+				!fileName ||
+				!statusText ||
+				!downloadLink
+			)
+				return;
+
+			if (!["image/png", "image/jpeg"].includes(file.type)) {
+				statusText.textContent = "只支持 JPG 或 PNG 图片。";
+				return;
+			}
+
+			previewPanel.hidden = false;
+			downloadLink.hidden = true;
+			statusText.textContent = "正在生成 icon...";
+			fileName.textContent = file.name;
+
+			try {
+				const image = await loadImage(file);
+				drawSquare(image, previewCanvas, 96);
+				const pngs = await Promise.all(
+					sizes.map((size) => renderPng(image, size)),
+				);
+				const ico = buildIco(pngs);
+				const previousUrl = downloadLink.getAttribute("href");
+				if (previousUrl) URL.revokeObjectURL(previousUrl);
+				downloadLink.setAttribute("href", URL.createObjectURL(ico));
+				downloadLink.hidden = false;
+				statusText.textContent = "已生成，可下载并放到网站 public 根目录。";
+				} catch (error) {
+					console.error(error);
+					statusText.textContent = "生成失败，请换一张图片试试。";
+				}
+			});
+		});
+
+		function loadImage(file: File): Promise<HTMLImageElement> {
+			return new Promise<HTMLImageElement>((resolve, reject) => {
+				const url = URL.createObjectURL(file);
+				const image = new Image();
+				image.onload = () => {
+					URL.revokeObjectURL(url);
+					resolve(image);
+				};
+				image.onerror = () => {
+					URL.revokeObjectURL(url);
+					reject(new Error("Image load failed"));
+				};
+				image.src = url;
+			});
+		}
+
+		function drawSquare(
+			image: HTMLImageElement,
+			canvas: HTMLCanvasElement,
+			size: number,
+		): void {
+			const context = canvas.getContext("2d");
+			if (!context) throw new Error("Canvas 2D context unavailable");
+			const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
+			const sourceX = (image.naturalWidth - sourceSize) / 2;
+			const sourceY = (image.naturalHeight - sourceSize) / 2;
+			context.clearRect(0, 0, size, size);
+			context.drawImage(
+				image,
+				sourceX,
+				sourceY,
+				sourceSize,
+				sourceSize,
+				0,
+				0,
+				size,
+				size,
+			);
+		}
+
+		async function renderPng(
+			image: HTMLImageElement,
+			size: number,
+		): Promise<IcoImage> {
+			const canvas = document.createElement("canvas");
+			canvas.width = size;
+			canvas.height = size;
+			drawSquare(image, canvas, size);
+			const blob = await new Promise<Blob | null>((resolve) =>
+				canvas.toBlob(resolve, "image/png"),
+			);
+			if (!blob) throw new Error("PNG render failed");
+			return { size, bytes: new Uint8Array(await blob.arrayBuffer()) };
+		}
+
+		function buildIco(images: readonly IcoImage[]): Blob {
+			const headerSize = 6;
+			const entrySize = 16;
+			const directorySize = headerSize + images.length * entrySize;
+			const totalSize =
+				directorySize +
+				images.reduce((sum, image) => sum + image.bytes.length, 0);
+			const buffer = new ArrayBuffer(totalSize);
+			const view = new DataView(buffer);
+			const bytes = new Uint8Array(buffer);
+
+			view.setUint16(0, 0, true);
+			view.setUint16(2, 1, true);
+			view.setUint16(4, images.length, true);
+
+			let offset = directorySize;
+			images.forEach((image, index) => {
+				const entryOffset = headerSize + index * entrySize;
+				view.setUint8(entryOffset, image.size === 256 ? 0 : image.size);
+				view.setUint8(entryOffset + 1, image.size === 256 ? 0 : image.size);
+				view.setUint8(entryOffset + 2, 0);
+				view.setUint8(entryOffset + 3, 0);
+				view.setUint16(entryOffset + 4, 1, true);
+				view.setUint16(entryOffset + 6, 32, true);
+				view.setUint32(entryOffset + 8, image.bytes.length, true);
+				view.setUint32(entryOffset + 12, offset, true);
+				bytes.set(image.bytes, offset);
+				offset += image.bytes.length;
+			});
+
+			return new Blob([buffer], { type: "image/x-icon" });
+		}
+	</script>
+</ToolsLayout>

@@ -47,13 +47,22 @@ const t = useTranslations(lang);
 								icon="mdi:web"
 								variant="article"
 							/>
-							<Link
-								id="btn-projects"
-								text={t("nav.projects")}
+							<a
 								href={localizePath("/projects", lang)}
-								icon="mdi:rocket-launch-outline"
-								variant="article"
-							/>
+								class="grid h-8 w-8 place-items-center text-gray-300 transition hover:text-white"
+								data-pill-label={t("nav.projects")}
+								aria-label={t("nav.projects")}
+							>
+								<Icon name="mdi:rocket-launch-outline" class="h-5 w-5" />
+							</a>
+							<a
+								href="/tools"
+								class="grid h-8 w-8 place-items-center text-gray-300 transition hover:text-white"
+								data-pill-label={t("nav.tools")}
+								aria-label={t("nav.tools")}
+							>
+								<Icon name="mdi:toolbox-outline" class="h-5 w-5" />
+							</a>
 							<Link
 								text={t("nav.about")}
 								href={localizePath("/about", lang)}
@@ -119,8 +128,12 @@ const t = useTranslations(lang);
 </style>
 
 <script>
+	import { setupPillTooltips } from "../../scripts/pill-tooltip";
 
 	document.addEventListener('astro:page-load', () => {
+		const cleanupPillTooltips = setupPillTooltips();
+		document.addEventListener('astro:before-swap', () => cleanupPillTooltips(), { once: true });
+
 		const btnWebsite = document.getElementById('btn-website');
 		const btnBack = document.getElementById('btn-back');
 		const btnReset = document.getElementById('btn-reset-view');

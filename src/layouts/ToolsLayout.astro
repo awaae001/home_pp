@@ -1,0 +1,63 @@
+---
+import { Icon } from "astro-icon/components";
+import { ClientRouter, fade } from "astro:transitions";
+import Starfield from "../components/Starfield.astro";
+import "../styles/global.css";
+
+interface Props {
+	title?: string;
+	description?: string;
+	heading?: string;
+	backHref?: string;
+	backTitle?: string;
+	/** 使用宽版容器（工具箱首页等多列布局） */
+	wide?: boolean;
+}
+
+const {
+	title = "工具箱 · awaae001",
+	description = "极简在线工具箱，所有处理均在浏览器本地完成。",
+	heading,
+	backHref = "/tools",
+	backTitle = "返回工具箱",
+	wide = false,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#0d1117" />
+		<meta name="color-scheme" content="dark" />
+		<title>{title}</title>
+		<ClientRouter />
+	</head>
+	<body class="min-h-screen bg-[#0d1117] font-sans text-gray-200 antialiased" transition:animate={fade({ duration: "var(--motion-duration-fast)" })}>
+		<Starfield persist />
+
+		<div class="fixed top-6 right-6 z-20 flex gap-4">
+			<a
+				href={backHref}
+				title={backTitle}
+				class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-500 hover:scale-105 cursor-pointer flex items-center justify-center"
+			>
+				<Icon name="mdi:arrow-left" class="w-4 h-4" />
+			</a>
+		</div>
+
+		<main
+			class:list={[
+				"relative z-10 mx-auto w-full px-4 py-10 md:px-6 md:py-14",
+				wide ? "max-w-5xl" : "max-w-2xl",
+			]}
+		>
+			{heading && <h1 class="mb-8 text-2xl font-bold tracking-tight text-white md:text-3xl">{heading}</h1>}
+			<slot />
+		</main>
+	</body>
+</html>
