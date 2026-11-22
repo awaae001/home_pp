@@ -2,15 +2,13 @@ import * as THREE from 'three';
 import { InteractionManager } from './interactions';
 import type { InteractiveTarget } from './interactions';
 import { createCelestialObjects } from './solar-system/celestialObjects';
+import { createInvertText } from './solar-system/invertText';
+import { createSpeeder } from './solar-system/speeder';
 import { createSceneContext } from './solar-system/scene';
 import { FlightControls } from './solar-system/flightControls';
 import { createVoyagerController } from './solar-system/voyager';
 import { createStoryCamera } from './solar-system/storyCamera';
-import { createObservationDeck } from './solar-system/observationDeck';
-
-/** 男人走进画面：滚到第几屏开始走，走完要几秒 */
-const WALK_START = 2.5;
-const WALK_SECONDS = 4;
+import { createObservationDeck, GLASS_FOLLOW_SHIFT } from './solar-system/observationDeck';
 
 export type Dispose = () => void;
 
@@ -41,15 +39,20 @@ export async function initSolarSystem(
   const context = createSceneContext(canvas);
   const celestialObjects = createCelestialObjects(context.scene);
   const voyager = createVoyagerController(context.scene);
+  const speeder = createSpeeder(context.scene);
   const cameraStats = document.getElementById('camera-stats');
   const flightHud = document.getElementById('flight-hud');
   const mainMask = document.getElementById('main-mask');
   const mainContent = document.getElementById('main-content');
   const aboutStage = document.getElementById('about-stage');
+  const invertText = createInvertText(document.querySelectorAll<HTMLElement>('.invert-text'));
+  const aboutTrack = document.getElementById('about-track');
+  const walkScreens = Number(aboutTrack?.dataset.walkScreens ?? 3);
+  const flyScreens = Number(aboutTrack?.dataset.flyScreens ?? 1);
   const deck = createObservationDeck(document.getElementById('glass-canvas') as HTMLCanvasElement);
+  document.documentElement.style.setProperty('--deck-follow', String(GLASS_FOLLOW_SHIFT));
   const storyCamera = createStoryCamera(context.camera, context.controls.target, deck);
   let storyMoving = true;
-  let walkProgress = 0;
   const solarContainer = document.getElementById('solar-system-container');
   const flightHudEnabled = solarContainer?.dataset.flightEnabled ?? 'Flight mode on';
   const flightHudDisabled = solarContainer?.dataset.flightDisabled ?? 'Flight mode off';
@@ -177,22 +180,20 @@ export async function initSolarSystem(
       context.controls,
     );
 
+    // 进舱以后飞船归剧情管：平时不出现，走完才从窗外飞过
+    let speederFly: number | undefined;
     if (isCovered) {
       cameraMode = { kind: 'free' };
       context.controls.enabled = true;
       const progress = mainContent ? mainContent.scrollTop / Math.max(mainContent.clientHeight, 1) : 0;
-      const story = storyCamera.update(progress, delta);
+      const story = storyCamera.update(progress, delta, walkScreens, flyScreens);
+      speederFly = story.inside ? story.fly : undefined;
       storyMoving = story.moving;
       aboutStage?.style.setProperty('--zoom', story.zoom.toFixed(4));
       document.documentElement.style.setProperty('--glass', story.glass.toFixed(3));
       deck.setVisible(story.inside);
-
-      // 滚到第 3 屏男人就开始走，按固定步速慢慢走进来；往回滚就倒着走出去
-      const goal = progress >= WALK_START ? 1 : 0;
-      const step = delta / WALK_SECONDS;
-      walkProgress += THREE.MathUtils.clamp(goal - walkProgress, -step, step);
-      deck.walk(walkProgress);
-      storyMoving ||= walkProgress !== goal;
+      document.documentElement.style.setProperty('--deck-shift', deck.walk(story.walk).toFixed(4));
+      invertText.update(context.camera);
     } else if (cameraMode.kind === 'resetting') {
       context.camera.position.lerp(context.defaultPosition, 0.08);
       context.controls.target.lerp(cameraMode.target, 0.08);
@@ -217,6 +218,7 @@ export async function initSolarSystem(
       }
       context.controls.update();
     }
+    speeder.update(delta, context.camera, speederFly);
     renderedFrames += 1;
     const statsDuration = timestamp - statsStartedAt;
     if (statsDuration >= 500) {
@@ -298,6 +300,7 @@ export async function initSolarSystem(
     window.removeEventListener('solar-flight-mode-change', setFlightMode);
     flightControls.dispose();
     voyager.dispose();
+    speeder.dispose();
     deck.dispose();
     celestialObjects.dispose();
     timer.dispose();

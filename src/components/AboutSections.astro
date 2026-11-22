@@ -1,5 +1,4 @@
 ---
-import { Icon } from 'astro-icon/components';
 import { useTranslations, type Lang } from '../i18n/utils';
 
 interface Props {
@@ -8,236 +7,93 @@ interface Props {
 
 const { lang } = Astro.props;
 const t = useTranslations(lang);
-const greetings = t('about.greetings');
+/** 男人走路这段占几屏 */
+const WALK_SCREENS = 2.8;
+/** 走完以后飞船从窗外飞过占几屏 */
+const FLY_SCREENS = 1;
+/** 玻璃上的字：at 是窗户还没挪时字左边在玻璃上的位置（NDC），1 就是刚好在画面右边外 */
+const glassTexts = [
+	{ at: '1', title: t('about.walk.far'), caption: t('about.walk.lunch') },
+	// 跟拍结束、对面的人走来时才滑进画面
+	{ at: 'calc(1 + var(--deck-follow))', title: t('about.meet.far'), caption: t('about.meet.words') },
+];
 ---
 
-<!-- 关于我：镜头贴近太阳，桌面端太阳在左、文字在右，手机端太阳在上、文字在下。
-     两屏高的轨道里 sticky 钉住，第二、三屏镜头倒退进舱，文字跟着太阳一起缩小（--zoom 由镜头给出） -->
-<div class="relative h-[300dvh] w-full">
+<!-- 关于我：桌面端太阳在左、文字在右，手机端太阳在上、文字在下。
+     第二、三屏镜头倒退进舱，文字跟着太阳缩小（--zoom）；
+     之后 WALK_SCREENS 屏男人走进来，窗户往左挪，对面走来另一个他擦肩而过；
+     再 FLY_SCREENS 屏飞船从窗外飞过；
+     卡片和玻璃上的字跟着窗户移出（--deck-shift） -->
+<div id="about-track" class="relative w-full" style={`height: ${(3 + WALK_SCREENS + FLY_SCREENS) * 100}dvh`} data-walk-screens={WALK_SCREENS} data-fly-screens={FLY_SCREENS}>
 	<div id="about" class="absolute top-0 h-dvh w-full snap-center"></div>
-	<div class="absolute top-[100dvh] h-dvh w-full snap-center" aria-hidden="true"></div>
-	<div class="absolute top-[200dvh] h-dvh w-full snap-center" aria-hidden="true"></div>
-	<div class="sticky top-0 h-dvh w-full">
+	<!-- 比一屏高的吸附区域内可以自由停留 -->
+	<div class="absolute top-0 h-full w-full snap-start" aria-hidden="true"></div>
+	<div class="sticky top-0 h-dvh w-full overflow-hidden">
 		<div id="about-stage" class="about-stage h-full w-full flex flex-col items-center justify-end pb-[16dvh] md:justify-center md:pb-0 md:pl-[50%]">
-			<div class="flex items-center gap-5 text-white">
+			<div class="relative flex items-center gap-5 text-white">
+				<!-- 进舱以后卡片变成 HUD，下面这条是投影源 -->
+				<div class="hud-base" aria-hidden="true"></div>
 				<img src="/avatar.webp" alt="awaae001" class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20" />
 				<div class="flex flex-col gap-1">
-					<span class="text-2xl md:text-3xl font-bold">awaae001</span>
-					<span class="text-gray-300 tracking-wide">{t('about.role')} {t('about.me')}</span>
+					<span class="invert-text text-2xl md:text-3xl font-bold font-hand">awaae001</span>
+					<span class="invert-text tracking-wide" style="--ink: 0.8">{t('about.role')}</span>
 				</div>
 			</div>
 		</div>
+		{glassTexts.map(({ at, title, caption }) => (
+			<div class="glass-text absolute top-[22%] flex flex-col gap-3 md:gap-5 whitespace-nowrap" style={`--at: ${at}`}>
+				<p class="invert-text text-lg md:text-4xl font-light tracking-[0.15em] md:tracking-[0.3em]" style="--ink: 0.85">{title}</p>
+				<p class="invert-text text-xs md:text-sm tracking-[0.2em]" style="--ink: 0.45">{caption}</p>
+			</div>
+		))}
 	</div>
 </div>
 
 <style>
 	.about-stage {
-		transform: scale(var(--zoom, 1));
+		/* 窗户开始挪以后，卡片像贴在玻璃上一样跟着窗户走 */
+		transform: translateX(calc(var(--deck-shift, 0) * -50vw)) scale(var(--zoom, 1));
 		transform-origin: 50% 50%;
-		/* 隔着观景窗玻璃，和窗外一起轻微模糊 */
-		filter: blur(calc(var(--glass, 0) * 1.5px));
+	}
+
+	/* 投影源：一条冷白光条托住卡片，往上打一片淡淡的光；进舱时淡入 */
+	.hud-base {
+		--hud-light: 220 232 255;
+		position: absolute;
+		top: calc(100% + 1.25rem);
+		left: -0.5rem;
+		right: -2.5rem;
+		height: 2px;
+		background: linear-gradient(90deg, transparent, rgb(var(--hud-light) / 85%) 10%, rgb(var(--hud-light) / 85%) 90%, transparent);
+		box-shadow: 0 0 12px rgb(var(--hud-light) / 55%);
+		opacity: var(--glass, 0);
+		pointer-events: none;
+	}
+
+	.hud-base::before {
+		content: '';
+		position: absolute;
+		inset: auto 0 100% 0;
+		height: 8rem;
+		background: linear-gradient(to top, rgb(var(--hud-light) / 14%), transparent);
+		mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+	}
+
+	/* 和背景取反色：太阳椭圆（--sun，脚本每帧给出）里是黑字，外面是白字，--ink 是不透明度 */
+	.invert-text {
+		color: transparent;
+		background-image: radial-gradient(
+			ellipse var(--sun, 0px 0px at -1px -1px),
+			rgb(0 0 0 / var(--ink, 1)) 100%,
+			rgb(255 255 255 / var(--ink, 1)) 100%
+		);
+		background-clip: text;
+		-webkit-background-clip: text;
+	}
+
+	/* 写在玻璃上：和窗户同速，不模糊，男人从字前面走过 */
+	.glass-text {
+		left: calc(50% + var(--at) * 50%);
+		transform: translateX(calc(var(--deck-shift, 0) * -50vw));
 	}
 </style>
-
-<!-- 契机与故事 -->
-<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
-	<div class="max-w-3xl w-full flex flex-col gap-8 relative px-6 md:px-12">
-		<!-- 装饰性引号 -->
-		<div class="absolute -top-12 left-0 text-7xl text-white/5 font-serif select-none pointer-events-none">"</div>
-
-		<div class="flex flex-col gap-8 z-10">
-			<div class="flex items-center gap-4">
-				<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase">{t('about.story.title')}</h2>
-				<div class="flex-1 h-px bg-linear-to-r from-white/20 to-transparent"></div>
-			</div>
-
-			<div class="space-y-6 text-gray-300/80 text-base md:text-lg leading-relaxed font-light tracking-wide">
-				<p class="transition-colors duration-500 hover:text-white flex items-center gap-2">
-					{t('about.story.p1.pre')} <span class="text-white/90 font-medium">2023</span> {t('about.story.p1.mid')}
-					<span class="inline-flex items-center gap-1 text-blue-300/80">
-						<Icon name="simple-icons:hexo" class="w-5 h-5" />
-						Hexo
-					</span>
-					{t('about.story.p1.post')}
-				</p>
-				<p class="transition-colors duration-500 hover:text-white">
-					{t('about.story.p2.pre')}<span class="text-white/90">{t('about.story.p2.highlight')}</span>{t('about.story.p2.mid')}<br>
-					{t('about.story.p2.post')}
-				</p>
-				<p class="transition-colors duration-500 hover:text-white">
-					{t('about.story.p3.pre')}<br>
-					{t('about.story.p3.mid1')} <span class="text-white/90 font-medium tracking-widest">AI</span> {t('about.story.p3.mid2')}<span class="text-white/90">{t('about.story.p3.word1')}</span>{t('about.story.p3.sep1')}<span class="text-white/90">{t('about.story.p3.word2')}</span>{t('about.story.p3.sep2')}<span class="text-white/90">{t('about.story.p3.word3')}</span>{t('about.story.p3.post')}
-				</p>
-			</div>
-		</div>
-
-		<div class="absolute -bottom-16 right-0 text-7xl text-white/5 font-serif select-none pointer-events-none transform rotate-180">"</div>
-	</div>
-</section>
-
-<!-- 语言和技术 -->
-<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
-	<div class="flex flex-col md:flex-row items-center md:items-start justify-center gap-12 md:gap-24 w-full max-w-4xl">
-		<div class="flex flex-col gap-10 w-full md:w-1/2 items-center md:items-end text-center md:text-right">
-			<div class="flex flex-col items-center md:items-end gap-5">
-				<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">{t('about.languages.title')}</h2>
-				<div class="flex flex-wrap justify-center md:justify-end gap-3 md:gap-5">
-					<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">中文</span>
-					<span class="text-gray-500">/</span>
-					<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">English</span>
-					<span class="text-gray-500">/</span>
-					<span class="text-lg md:text-xl text-gray-200 hover:text-white transition-colors">한국어</span>
-				</div>
-			</div>
-
-			<div class="w-12 h-px bg-white/20"></div>
-			<div class="flex flex-col items-center md:items-end gap-5">
-				<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">{t('about.codelangs.title')}</h2>
-				<div class="flex flex-wrap justify-center md:justify-end gap-3 md:gap-5">
-					<span class="text-lg md:text-xl text-blue-300 hover:text-blue-200 transition-colors">js/ts</span>
-					<span class="text-gray-500">/</span>
-					<span class="text-lg md:text-xl text-yellow-300 hover:text-yellow-200 transition-colors">py</span>
-					<span class="text-gray-500">/</span>
-					<span class="text-lg md:text-xl text-cyan-300 hover:text-cyan-200 transition-colors">go</span>
-					<span class="text-gray-500">/</span>
-					<span class="text-lg md:text-xl text-orange-300 hover:text-orange-200 transition-colors">rust</span>
-				</div>
-			</div>
-		</div>
-
-
-		<div class="hidden md:block w-px h-48 bg-white/10"></div>
-		<div class="flex flex-col gap-10 w-full md:w-1/2 items-center md:items-start text-center md:text-left">
-			<div class="flex flex-col items-center md:items-start gap-8">
-				<h2 class="text-lg md:text-xl font-bold text-white/60 tracking-widest uppercase">{t('about.tools.title')}</h2>
-				<div class="grid grid-cols-4 gap-6 md:gap-8 opacity-80">
-					<Icon name="mdi:git" class="w-10 h-10 text-[#F05032] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Git" />
-					<Icon name="mdi:github" class="w-10 h-10 text-white hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="GitHub" />
-					<Icon name="mdi:docker" class="w-10 h-10 text-[#2496ED] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Docker" />
-					<Icon name="mdi:linux" class="w-10 h-10 text-white hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Linux" />
-					<Icon name="mdi:microsoft-visual-studio-code" class="w-10 h-10 text-[#007ACC] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="VS Code" />
-					<Icon name="mdi:database" class="w-10 h-10 text-gray-300 hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Database" />
-					<Icon name="simple-icons:cloudflare" class="w-10 h-10 text-[#F38020] hover:scale-110 hover:opacity-100 transition-all cursor-pointer" title="Cloudflare" />
-				</div>
-			</div>
-		</div>
-	</div>
-</section>
-
-<!-- 生活状态与爱好 -->
-<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
-	<div class="flex flex-col items-center gap-12 w-full max-w-4xl">
-		<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase relative">
-			{t('about.daily.title')}
-			<div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-px bg-white/30"></div>
-		</h2>
-
-		<div class="flex flex-wrap justify-center gap-10 md:gap-16 mt-4 max-w-2xl">
-			<div class="group flex flex-col items-center gap-4 cursor-pointer">
-				<Icon name="mdi:controller-classic" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
-				<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.games')}</span>
-			</div>
-
-			<div class="group flex flex-col items-center gap-4 cursor-pointer">
-				<Icon name="mdi:shoe-sneaker" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
-				<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.walk')}</span>
-			</div>
-
-			<div class="group flex flex-col items-center gap-4 cursor-pointer">
-				<Icon name="mdi:food-apple" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
-				<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.snacks')}</span>
-			</div>
-
-			<div class="group flex flex-col items-center gap-4 cursor-pointer">
-				<Icon name="mdi:book-open-page-variant" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
-				<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.reading')}</span>
-			</div>
-
-			<div class="group flex flex-col items-center gap-4 cursor-pointer">
-				<Icon name="mdi:weather-pouring" class="w-10 h-10 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
-				<span class="text-sm tracking-widest text-white/60 group-hover:text-white transition-colors">{t('about.daily.whining')}</span>
-			</div>
-		</div>
-	</div>
-</section>
-
-<!-- 联系我 -->
-<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
-	<div class="flex flex-col items-center gap-12 w-full max-w-4xl">
-		<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-widest uppercase">{t('about.contact.title')}</h2>
-
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full justify-items-center">
-			<a href="https://t.me/jiuci_world" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center gap-4 group">
-				<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-[#2AABEE]/20 transition-all duration-300">
-					<Icon name="mdi:telegram" class="w-10 h-10 text-[#2AABEE] group-hover:scale-110 transition-transform" title="Telegram" />
-				</div>
-				<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">@jiuci_world</span>
-			</a>
-
-			<a href="mailto:i@neosora.cc" class="flex flex-col items-center gap-4 group">
-				<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
-					<Icon name="mdi:email" class="w-10 h-10 text-white group-hover:scale-110 transition-transform" title="Email" />
-				</div>
-				<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">i@neosora.cc</span>
-			</a>
-
-			<a href="https://github.com/awaae001" target="_blank" rel="noopener noreferrer" class="flex flex-col items-center gap-4 group">
-				<div class="p-4 bg-white/5 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
-					<Icon name="mdi:github" class="w-10 h-10 text-white group-hover:scale-110 transition-transform" title="GitHub" />
-				</div>
-				<span class="text-lg md:text-xl text-gray-300 group-hover:text-white transition-colors tracking-wide">awaae001</span>
-			</a>
-		</div>
-	</div>
-</section>
-
-<!-- 最后 -->
-<section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">
-	<div class="max-w-3xl w-full flex flex-col items-center text-center gap-12 relative px-6 md:px-12">
-		<h2 class="text-xl md:text-2xl font-bold text-white/60 tracking-[0.3em] uppercase relative">
-			// EOF
-		</h2>
-	</div>
-</section>
-
-<!-- 结语 -->
-<section class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
-	<div class="text-center relative flex flex-col gap-6">
-		<p id="greeting-text" data-greetings={JSON.stringify(greetings)} class="text-sm md:text-base text-white/40 tracking-[0.5em] md:tracking-[0.8em] uppercase pr-[-0.5em] transition-opacity duration-1000 opacity-0">
-			{greetings[0]}
-		</p>
-		<p class="text-xl md:text-3xl font-light text-white/80 tracking-[0.2em] md:tracking-[0.3em] font-serif italic" style="text-shadow: 0 0 20px rgba(255,255,255,0.3);">
-			{t('about.closing')}
-		</p>
-		<div class="w-12 h-px bg-white/20 mx-auto mt-2"></div>
-	</div>
-</section>
-
-<script>
-	document.addEventListener('astro:page-load', () => {
-		// 动态文案（语言由服务端渲染进 data-greetings）
-		const greetingEl = document.getElementById('greeting-text');
-		if (!greetingEl) return;
-		const greetings: string[] = JSON.parse(greetingEl.dataset.greetings ?? '[]');
-		if (greetings.length === 0) return;
-
-		const pick = () => greetings[Math.floor(Math.random() * greetings.length)];
-		greetingEl.textContent = pick();
-
-		const observer = new IntersectionObserver((entries) => {
-			entries.forEach((entry) => {
-				if (entry.isIntersecting) {
-					greetingEl.classList.remove('opacity-0');
-					return;
-				}
-				greetingEl.classList.add('opacity-0');
-				setTimeout(() => {
-					if (greetingEl.classList.contains('opacity-0')) greetingEl.textContent = pick();
-				}, 1000);
-			});
-		}, { threshold: 0.5 });
-
-		observer.observe(greetingEl);
-		document.addEventListener('astro:before-swap', () => observer.disconnect(), { once: true });
-	});
-</script>

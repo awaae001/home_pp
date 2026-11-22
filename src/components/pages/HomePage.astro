@@ -34,8 +34,8 @@ const t = useTranslations(lang);
 
 		<main class="relative flex flex-col items-center justify-center h-dvh px-4 text-right font-sans snap-center">
 			<section>
-				<h1 class="mb-12 md:mb-16 text-2xl md:text-5xl font-bold text-white tracking-tight animate-fade-in">
-					{t("home.greeting")}
+				<h1 class="mb-12 md:mb-16 text-2xl md:text-5xl font-normal text-white tracking-tight animate-fade-in">
+					{t("home.greeting")} <span class="font-hand" style="position: relative; top: -2px;">awaae001</span>
 				</h1>
 				<p class="mb-3 text-base md:text-lg text-gray-300 animate-fade-in opacity-0" style="animation-delay: 0.15s; animation-fill-mode: forwards;">
 					{t("home.tagline")}
@@ -71,15 +71,10 @@ const t = useTranslations(lang);
 					>
 						<Icon name="mdi:toolbox-outline" class="h-5 w-5" />
 					</a>
-					<Link
-						text={t("nav.about")}
-						href="#about"
-						variant="article"
-					/>
 				</div>
 			</section>
 
-			<a href="#about" aria-label={t("nav.about")} class="scroll-hint absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 hover:text-white transition-colors">
+			<a href="#about" class="scroll-hint absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 hover:text-white transition-colors">
 				<Icon name="mdi:chevron-double-down" class="w-6 h-6" />
 			</a>
 		</main>
@@ -175,16 +170,13 @@ const t = useTranslations(lang);
 		const percentageText = document.getElementById('scroll-percentage');
 
 		if (mainContent && mainMask && progress && indicator && percentageText) {
-			// 前三屏（首屏 / 关于我 / 舷窗）由滚动驱动镜头，舷窗合拢后再压暗窗外
 			const updateScroll = () => {
 				const { scrollTop, scrollHeight, clientHeight } = mainContent;
 				const page = scrollTop / clientHeight;
-				const dim = Math.min(Math.max((page - 3) / 0.6, 0), 1);
 				const aboutRange = scrollHeight - clientHeight * 2;
 				const percent = aboutRange > 0 ? Math.max(0, (scrollTop - clientHeight) / aboutRange) * 100 : 0;
 
-				mainMask.style.backgroundColor = `rgb(13 17 23 / ${dim * 0.85})`;
-				progress.style.opacity = page > 3.3 ? '1' : '0';
+				progress.style.opacity = page > 3 ? '1' : '0';
 				indicator.style.height = `${percent}%`;
 				percentageText.textContent = `${Math.round(percent)}%`;
 			};

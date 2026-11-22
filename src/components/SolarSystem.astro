@@ -27,12 +27,13 @@ const t = useTranslations(lang);
   data-loader-cached-model={t("home.solar.cachedModel")}
 >
   <canvas id="solar-canvas"></canvas>
-  <canvas id="glass-canvas" aria-hidden="true"></canvas>
   <output id="camera-position" aria-live="polite">
     <span id="flight-hud"></span>
     <span id="camera-stats"></span>
   </output>
 </div>
+<!-- 舱内一层盖在主页内容上面，挡住窗外的卡片 -->
+<canvas id="glass-canvas" aria-hidden="true"></canvas>
 <div id="solar-loader" role="status" aria-live="polite">
   <span class="loader-mark" aria-hidden="true"></span>
   <span id="solar-loader-text">{t("home.solar.loading")}</span>
@@ -143,7 +144,8 @@ const t = useTranslations(lang);
   }
 
   #glass-canvas {
-    position: absolute;
+    position: fixed;
+    z-index: 21;
     inset: 0;
     width: 100%;
     height: 100%;

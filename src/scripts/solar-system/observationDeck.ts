@@ -9,20 +9,20 @@ import { createWalker } from './walker';
  * 单独画在一层画布上，这样窗外的星空可以模糊，玻璃上的东西保持清晰。
  */
 
-/** 窗棂在最终画面里的位置（占半屏宽的比例） */
+/** 窗棂在第 2 镜里的位置（占半屏宽的比例） */
 const POST_NDC = 0.92;
 /** 窗棂高度超出画面多少 */
 const OVERSIZE = 3;
 /** 窗棂宽度：按一扇半宽的比例 */
 const POST_WIDTH = 0.012;
 /** 左右各再铺几扇 */
-const PANES = 4;
+const PANES = 8;
 
 /** 地板往舱内铺多深、地砖多宽：按一扇半宽的比例 */
 const FLOOR_DEPTH = 6;
 const TILE = 0.5;
-/** 窗外的冷光：光带从窗脚往舱里伸多长 */
-const LIGHT_LENGTH = 3.2;
+/** 窗外的冷光：光带从窗脚往舱里伸多长（到第一格地砖前） */
+const LIGHT_LENGTH = TILE * 0.9;
 
 const COLORS = {
   floor: 0x121821,
@@ -47,66 +47,52 @@ const SCRATCHES: readonly (readonly [number, number, number, number])[] = [
 const flat = (color: number) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
 
 /** 平铺在地板上的一层：坐标 (x, v)，v 是离窗脚往舱里的距离 */
-function floorLayer(shapes: THREE.Shape[], color: number, order: number, floorY: number, opacity = 1): THREE.Mesh {
+function floorLayer(shapes: THREE.Shape[], color: number, order: number, opacity = 1): THREE.Mesh {
   const material = flat(color);
   material.depthTest = false;
   material.transparent = opacity < 1;
   material.opacity = opacity;
   const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shapes), material);
   mesh.rotation.x = -Math.PI / 2;
-  mesh.position.y = floorY;
   mesh.renderOrder = order;
   return mesh;
 }
 
-const quad = (points: readonly [number, number][]): THREE.Shape => (
-  new THREE.Shape(points.map(([x, v]) => new THREE.Vector2(x, v)))
+const rect = (left: number, bottom: number, right: number, top: number): THREE.Shape => (
+  new THREE.Shape([
+    new THREE.Vector2(left, bottom),
+    new THREE.Vector2(right, bottom),
+    new THREE.Vector2(right, top),
+    new THREE.Vector2(left, top),
+  ])
 );
 
-/**
- * 舱内地板：深色底 + 窗脚一条很淡的冷白光带，
- * 最上面压一层半透明砖缝。
- */
-function buildFloor(w: number, post: number, floorY: number): THREE.Group {
-  const group = new THREE.Group();
-  const span = w * PANES * 2;
-  const depth = w * FLOOR_DEPTH;
-  const seam = post * 0.6;
-
+/** 以一扇窗的半宽为 1，铺地板、冷白光带和砖缝。 */
+function createFloor(): THREE.Group {
+  const span = PANES * 2;
+  const seam = POST_WIDTH * 0.6;
   const seams: THREE.Shape[] = [];
-  for (let x = -span; x <= span; x += w * TILE) {
-    seams.push(quad([[x - seam, 0], [x + seam, 0], [x + seam, depth], [x - seam, depth]]));
+  for (let x = -span; x <= span; x += TILE) {
+    seams.push(rect(x - seam, 0, x + seam, FLOOR_DEPTH));
   }
-  for (let v = w * TILE; v < depth; v += w * TILE) {
-    seams.push(quad([[-span, v - seam], [span, v - seam], [span, v + seam], [-span, v + seam]]));
+  for (let v = TILE; v < FLOOR_DEPTH; v += TILE) {
+    seams.push(rect(-span, v - seam, span, v + seam));
   }
 
-  const length = w * LIGHT_LENGTH;
-  const light = quad([[-span, 0], [span, 0], [span, length], [-span, length]]);
-
-  group.add(
-    floorLayer([quad([[-span, 0], [span, 0], [span, depth], [-span, depth]])], COLORS.floor, 0, floorY),
-    floorLayer([light], COLORS.light, 1, floorY, 0.06),
-    floorLayer(seams, COLORS.seam, 2, floorY, 0.45),
+  return new THREE.Group().add(
+    floorLayer([rect(-span, 0, span, FLOOR_DEPTH)], COLORS.floor, 0),
+    floorLayer([rect(-span, 0, span, LIGHT_LENGTH)], COLORS.light, 1, 0.06),
+    floorLayer(seams, COLORS.seam, 2, 0.45),
   );
-  return group;
 }
 
-function buildWindow(halfW: number, halfH: number, floorY: number): THREE.Group {
-  const group = new THREE.Group();
-  const w = halfW * POST_NDC;
-  const post = w * POST_WIDTH;
-  const top = halfH * OVERSIZE;
-  const bar = new THREE.PlaneGeometry(post, top - floorY);
-  const material = flat(COLORS.post);
-
-  for (let i = -PANES; i < PANES; i += 1) {
-    const mullion = new THREE.Mesh(bar, material);
-    mullion.position.set((2 * i + 1) * w, (top + floorY) / 2, 0);
-    group.add(mullion);
-  }
-
-  group.add(buildFloor(w, post, floorY));
+function createWindow() {
+  const shapes = Array.from({ length: PANES * 2 }, (_, i) => {
+    const x = 2 * (i - PANES) + 1;
+    return rect(x - POST_WIDTH / 2, 0, x + POST_WIDTH / 2, 1);
+  });
+  const posts = new THREE.Mesh(new THREE.ShapeGeometry(shapes), flat(COLORS.post));
+  const floor = createFloor();
 
   const scratchMaterial = new THREE.MeshBasicMaterial({
     color: COLORS.scratch,
@@ -115,19 +101,37 @@ function buildWindow(halfW: number, halfH: number, floorY: number): THREE.Group 
     opacity: 0.18,
     depthWrite: false,
   });
-  for (const [x, y, length, angle] of SCRATCHES) {
-    const scratch = new THREE.Mesh(new THREE.PlaneGeometry(length * w, post * 0.12), scratchMaterial);
-    scratch.position.set(x * w, y * halfH, 0);
-    scratch.rotation.z = angle;
-    group.add(scratch);
-  }
+  const scratches = SCRATCHES.map(([, , length, angle]) => {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(length, POST_WIDTH * 0.12), scratchMaterial);
+    mesh.rotation.z = angle;
+    return mesh;
+  });
+  // 窗棂上的红色刻度：每隔一根窗棂一个（x = -1, 3, -5, 7 …）
+  const ticks = Array.from({ length: PANES }, (_, i) => {
+    const x = 4 * (i - Math.floor(PANES / 2)) - 1;
+    return rect(x - POST_WIDTH * 2.5, -POST_WIDTH * 0.4, x + POST_WIDTH * 2.5, POST_WIDTH * 0.4);
+  });
+  const tick = new THREE.Mesh(new THREE.ShapeGeometry(ticks), flat(COLORS.red));
+  const object = new THREE.Group().add(posts, floor, ...scratches, tick);
 
-  // 窗棂上的红色刻度
-  const tick = new THREE.Mesh(new THREE.PlaneGeometry(post * 5, post * 0.8), flat(COLORS.red));
-  tick.position.set(-w, halfH * 0.55, -post * 0.01);
-  group.add(tick);
+  return {
+    object,
+    layout: (halfW: number, halfH: number, floorY: number): void => {
+      const w = halfW * POST_NDC;
+      posts.scale.set(w, halfH * OVERSIZE - floorY, 1);
+      posts.position.y = floor.position.y = floorY;
+      floor.scale.set(w, 1, w);
 
-  return group;
+      // 划痕等比缩放，窗口比例变了也不改变划痕角度。
+      scratches.forEach((mesh, i) => {
+        const [x, y] = SCRATCHES[i];
+        mesh.position.set(x * w, y * halfH, 0);
+        mesh.scale.setScalar(w);
+      });
+      tick.position.set(0, halfH * 0.55, -w * POST_WIDTH * 0.01);
+      tick.scale.setScalar(w);
+    },
+  };
 }
 
 const FLIP = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
@@ -136,6 +140,21 @@ const FLIP = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0),
 const MAN_DEPTH = 0.66;
 const MAN_HEIGHT = 0.55;
 const MAN_STOP = -0.45;
+/** 舱往左挪多远（占半屏宽） */
+const MAN_FOLLOW = 2;
+/** 舱挪动时男人比窗户快一点，最后停在这里（NDC x） */
+const MAN_END = 0.4;
+/** 跟拍结束后舱接着往左挪多远（占半屏宽），他钉在画面右边继续走 */
+const MEET_SHIFT = 1.5;
+/** 飞船飞过时他接着往前走，舱接着往左挪多远（占半屏宽），速度和前面差不多 */
+const ONWARD_SHIFT = 1.8;
+/** 对面的人和他同时出发、同样步速，在这一段的这个位置擦肩而过 */
+const PASS_AT = 0.3;
+/** 对面的人比他离窗户近一点（占他到镜头距离的比例），擦肩时在他身后 */
+const OTHER_BEHIND = 0.1;
+
+/** 跟拍结束时玻璃往左挪了多少（NDC），用来摆后面玻璃上的字 */
+export const GLASS_FOLLOW_SHIFT = MAN_FOLLOW * MAN_DEPTH;
 
 export interface DeckLayout {
   readonly tanH: number;
@@ -145,10 +164,20 @@ export interface DeckLayout {
   readonly floorNdc: number;
 }
 
+/** 世界单位：enter 走进画面，follow 舱往左挪，meet 对面的人走来擦肩而过，onward 飞船飞过时接着走 */
+export interface WalkPath {
+  readonly enter: number;
+  readonly follow: number;
+  readonly meet: number;
+  readonly onward: number;
+}
+
 export interface ObservationDeck {
-  readonly place: (center: THREE.Vector3, rotation: THREE.Quaternion, layout: DeckLayout) => void;
+  /** 摆好窗口和男人，返回他要走的路线 */
+  readonly place: (center: THREE.Vector3, rotation: THREE.Quaternion, layout: DeckLayout) => WalkPath;
   readonly setVisible: (visible: boolean) => void;
-  readonly walk: (progress: number) => void;
+  /** 从起点走了多远（世界单位），返回玻璃往左挪了多少（NDC） */
+  readonly walk: (distance: number) => number;
   readonly render: (camera: THREE.Camera) => void;
   readonly resize: () => void;
   readonly dispose: () => void;
@@ -158,12 +187,22 @@ export function createObservationDeck(canvas: HTMLCanvasElement): ObservationDec
   const scene = new THREE.Scene();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   const root = new THREE.Group();
-  const room = new THREE.Group();
+  // 窗户、地板、男人一起往左挪，窗外不动
+  const track = new THREE.Group();
+  const room = createWindow();
   const walker = createWalker();
+  const other = createWalker();
   root.visible = false;
-  root.add(room, walker.object);
+  track.add(room.object, walker.object, other.object);
+  root.add(track);
   scene.add(root);
   let drawn = false;
+  let enterLength = 0;
+  let followLength = 0;
+  let driftLength = 0;
+  let meetLength = 0;
+  let onwardLength = 0;
+  let glassHalfWidth = 1;
 
   const resize = (): void => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -175,29 +214,50 @@ export function createObservationDeck(canvas: HTMLCanvasElement): ObservationDec
   return {
     place: (center, rotation, { tanH, tanV, paneDistance, finalDistance, floorNdc }) => {
       const floorY = finalDistance * tanV * floorNdc;
-      disposeObject(room);
-      room.clear();
-      room.add(buildWindow(paneDistance * tanH, paneDistance * tanV, floorY));
+      glassHalfWidth = finalDistance * tanH;
+      room.layout(paneDistance * tanH, paneDistance * tanV, floorY);
 
       // 局部 x 和画面左右是反的（窗口绕 y 转了半圈）
       const distance = finalDistance * MAN_DEPTH;
       const height = MAN_HEIGHT * 2 * distance * tanV;
       const halfWidth = distance * tanH;
-      walker.setStage({
-        floorY,
-        z: -(finalDistance - distance),
-        height,
-        fromX: halfWidth + walker.strideFor(height),
-        toX: -MAN_STOP * halfWidth,
-      });
+      const fromX = halfWidth + walker.strideFor(height);
+      const stopX = -MAN_STOP * halfWidth;
+      const enter = fromX - stopX;
+      const follow = MAN_FOLLOW * halfWidth;
+      enterLength = enter;
+      followLength = follow;
+      driftLength = (MAN_END - MAN_STOP) * halfWidth;
+
+      meetLength = MEET_SHIFT * halfWidth;
+      onwardLength = ONWARD_SHIFT * halfWidth;
+      const total = enter + follow + meetLength;
+
+      const z = -(finalDistance - distance);
+      const toX = stopX - follow - driftLength - meetLength - onwardLength;
+      walker.setStage({ floorY, z, height, fromX, toX });
+      // 对面的人从开头就在走：倒推出发点，让他在 PASS_AT 正好走到他身边
+      const passX = toX + onwardLength + (1 - PASS_AT) * meetLength;
+      const otherFrom = passX - (enter + follow + PASS_AT * meetLength);
+      other.setStage({ floorY, z: z + OTHER_BEHIND * distance, height, fromX: otherFrom, toX: otherFrom + total });
       root.position.copy(center);
       // 相机看 -z，窗口的 +z 要朝窗外，所以绕 y 转半圈
       root.quaternion.copy(rotation).multiply(FLIP);
+      return { enter, follow, meet: meetLength, onward: onwardLength };
     },
     setVisible: (visible) => {
       root.visible = visible;
     },
-    walk: walker.update,
+    walk: (distance) => {
+      // 局部 +x 是画面左边；舱挪多少他就多走多少，再加一点领先量，领先量两头都缓
+      const total = enterLength + followLength + meetLength;
+      const t = THREE.MathUtils.clamp((distance - enterLength) / followLength, 0, 1);
+      track.position.x = THREE.MathUtils.clamp(distance - enterLength, 0, followLength + meetLength + onwardLength);
+      const walked = Math.min(distance, enterLength) + track.position.x + driftLength * t * t * (3 - 2 * t);
+      walker.update(walked / (total + onwardLength + driftLength));
+      other.update(THREE.MathUtils.clamp(distance / total, 0, 1));
+      return track.position.x / glassHalfWidth;
+    },
     render: (camera) => {
       // 不显示时清一次就够了
       if (!root.visible && !drawn) {
@@ -209,7 +269,8 @@ export function createObservationDeck(canvas: HTMLCanvasElement): ObservationDec
     resize,
     dispose: () => {
       walker.dispose();
-      disposeObject(room);
+      other.dispose();
+      disposeObject(room.object);
       renderer.dispose();
     },
   };

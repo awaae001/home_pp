@@ -29,9 +29,12 @@ export interface CelestialPlanet {
   readonly config: PlanetConfig;
 }
 
+/** 太阳在原点，半径 */
+export const SUN_RADIUS = 1.5;
+
 function createSun(): THREE.Mesh {
   return new THREE.Mesh(
-    new THREE.SphereGeometry(1.5, 128, 64),
+    new THREE.SphereGeometry(SUN_RADIUS, 128, 64),
     new THREE.MeshBasicMaterial({ color: 0xfdb813 }),
   );
 }

@@ -3,10 +3,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 /*
- * 舱内行走的男人：tevy.dev 的 Race Marshal（CC0），LOD1（LOD2 面数太少，走起来两条腿粘成一块）。
- * 去掉了材质、法线、UV，只留骨骼和走路动画，用 meshopt 压缩。
- * 平涂纯黑当剪影。模型面朝 +z，走路动画是原地踏步，按 1.3 m/s 做的。
- * 动画时间跟着走过的距离，走到头钉在最后一帧，不进待机。
+ * 舱内行走的男人：Quaternius 的 Smooth Male Casual（CC0）。
+ * 去掉材质、法线、UV，只留骨骼和走路动画，平涂纯黑当剪影。
+ * 模型面朝 +z，走路动画是原地踏步，按 1.3 m/s 播放。
  */
 
 const MODEL_URL = '/models/walker.glb';
@@ -14,64 +13,7 @@ const MODEL_HEIGHT = 1.78;
 const WALK_SPEED = 1.3;
 /** 侧面看迈步时的大致宽度（米），用来算从画面外多远开始走 */
 const STRIDE_WIDTH = 0.9;
-/** 原动画手臂只在身前小幅摆、手肘一直弯着，像停在半空：摆幅放大，手肘伸直一些 */
-const ARM_SWING = 2;
-const ELBOW_BEND = 0.45;
-const ARMS = ['upperarm_L', 'upperarm_R'] as const;
-const ELBOWS = ['forearm_L', 'forearm_R'] as const;
-
-interface ArmSwing {
-  readonly bone: THREE.Object3D;
-  /** 摆动的中间姿态和摆动轴（骨骼局部） */
-  readonly middle: THREE.Quaternion;
-  readonly axis: THREE.Vector3;
-}
-
-const swingDelta = new THREE.Quaternion();
-const swingAxis = new THREE.Quaternion();
-const IDENTITY = new THREE.Quaternion();
-
-/** 把整段走路动画里这根骨头的姿态采样一遍，求出中间姿态和摆动轴 */
-function measureSwing(mixer: THREE.AnimationMixer, action: THREE.AnimationAction, bone: THREE.Object3D): ArmSwing {
-  const duration = action.getClip().duration;
-  const samples: THREE.Quaternion[] = [];
-  for (let i = 0; i < 24; i += 1) {
-    action.time = duration * i / 24;
-    mixer.update(0);
-    samples.push(bone.quaternion.clone());
-  }
-  const middle = new THREE.Quaternion(0, 0, 0, 0);
-  for (const q of samples) {
-    const sign = q.dot(samples[0]) < 0 ? -1 : 1;
-    middle.set(middle.x + q.x * sign, middle.y + q.y * sign, middle.z + q.z * sign, middle.w + q.w * sign);
-  }
-  middle.normalize();
-
-  // 离中间姿态最远的那一帧，决定摆动轴
-  const inverse = middle.clone().invert();
-  let axis = new THREE.Vector3(1, 0, 0);
-  let widest = 0;
-  for (const q of samples) {
-    const d = inverse.clone().multiply(q);
-    const v = new THREE.Vector3(d.x, d.y, d.z);
-    if (v.length() > widest) {
-      widest = v.length();
-      axis = v.normalize();
-    }
-  }
-  return { bone, middle, axis };
-}
-
-function amplify({ bone, middle, axis }: ArmSwing): void {
-  swingDelta.copy(middle).invert().multiply(bone.quaternion);
-  // q 和 -q 是同一个姿态，统一到 w ≥ 0，不然角度会绕一整圈变成大风车
-  if (swingDelta.w < 0) {
-    swingDelta.set(-swingDelta.x, -swingDelta.y, -swingDelta.z, -swingDelta.w);
-  }
-  const angle = 2 * Math.atan2(swingDelta.x * axis.x + swingDelta.y * axis.y + swingDelta.z * axis.z, swingDelta.w);
-  swingAxis.setFromAxisAngle(axis, angle * ARM_SWING);
-  bone.quaternion.copy(middle).multiply(swingAxis);
-}
+const WALK_CLIP = 'Man_Walk';
 
 export interface WalkerStage {
   /** 站在地板上的高度 */
@@ -100,10 +42,6 @@ export function createWalker(): Walker {
   const material = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true });
   let mixer: THREE.AnimationMixer | undefined;
   let walk: THREE.AnimationAction | undefined;
-  let arms: ArmSwing[] = [];
-  let elbows: THREE.Object3D[] = [];
-  let tuned: THREE.Object3D[] = [];
-  let raw: THREE.Quaternion[] = [];
   let lastTime = -1;
   let stage: WalkerStage | undefined;
 
@@ -122,19 +60,10 @@ export function createWalker(): Walker {
     object.add(model);
 
     mixer = new THREE.AnimationMixer(model);
-    const clip = gltf.animations.find((a) => a.name === 'walk');
+    const clip = gltf.animations.find((a) => a.name === WALK_CLIP);
     if (clip) {
-      const action = mixer.clipAction(clip).play();
-      const mx = mixer;
-      action.timeScale = 0;
-      arms = ARMS.flatMap((name) => {
-        const bone = model.getObjectByName(name);
-        return bone ? [measureSwing(mx, action, bone)] : [];
-      });
-      elbows = ELBOWS.flatMap((name) => model.getObjectByName(name) ?? []);
-      tuned = [...arms.map((arm) => arm.bone), ...elbows];
-      raw = tuned.map((bone) => bone.quaternion.clone());
-      walk = action;
+      walk = mixer.clipAction(clip).play();
+      walk.timeScale = 0;
     }
   }).catch((err) => console.warn('[Solar] 行走模型加载失败:', err));
 
@@ -144,6 +73,8 @@ export function createWalker(): Walker {
     setStage: (next) => {
       stage = next;
       object.scale.setScalar(next.height / MODEL_HEIGHT);
+      // 模型默认面朝局部 -x，往 +x 走就掉个头
+      object.rotation.y = next.toX > next.fromX ? Math.PI : 0;
       lastTime = -1;
     },
     update: (progress) => {
@@ -164,15 +95,7 @@ export function createWalker(): Walker {
         return;
       }
       lastTime = walk.time;
-
-      // mixer 只在值变了的时候才写骨骼：先还原成动画原本的姿态，再在上面放大摆臂，不会一帧帧叠加
-      tuned.forEach((bone, i) => bone.quaternion.copy(raw[i]));
       mixer.update(0);
-      tuned.forEach((bone, i) => raw[i].copy(bone.quaternion));
-      arms.forEach(amplify);
-      for (const elbow of elbows) {
-        elbow.quaternion.slerp(IDENTITY, 1 - ELBOW_BEND);
-      }
     },
     dispose: () => {
       mixer?.stopAllAction();
