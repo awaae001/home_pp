@@ -114,7 +114,7 @@ export function setupPillTooltips(selector = "[data-pill-label]"): () => void {
 		anchor.addEventListener("mouseleave", onLeave);
 	});
 
-	window.addEventListener("scroll", removePill, { passive: true });
+	window.addEventListener("scroll", removePill, { passive: true, capture: true });
 
 	return () => {
 		clearTimer(showTimer);
@@ -123,7 +123,7 @@ export function setupPillTooltips(selector = "[data-pill-label]"): () => void {
 			anchor.removeEventListener("mouseenter", onEnter);
 			anchor.removeEventListener("mouseleave", onLeave);
 		});
-		window.removeEventListener("scroll", removePill);
+		window.removeEventListener("scroll", removePill, { capture: true });
 		removePill();
 	};
 }

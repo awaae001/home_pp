@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import SolarSystem from "../SolarSystem.astro";
+import AboutSections from "../AboutSections.astro";
 import Link from "../ui/Link.astro";
 import { Icon } from "astro-icon/components";
 import { localizePath, useTranslations, type Lang } from "../../i18n/utils";
@@ -21,58 +22,69 @@ const t = useTranslations(lang);
 >
 	<SolarSystem lang={lang} />
 	<div id="main-mask" class="fixed inset-0 z-10 opacity-75 backdrop-blur-[3px] transition-opacity duration-500"></div>
-	<div id="main-content" class="relative z-20 flex flex-col h-screen transition-opacity duration-500">
-		<div class="grow">
-			<div class="relative w-full h-full overflow-hidden font-sans">
-				<main class="flex flex-col items-center justify-center h-full px-4 text-right">
-					<section>
-						<h1 class="mb-12 md:mb-16 text-2xl md:text-5xl font-bold text-white tracking-tight animate-fade-in">
-							{t("home.greeting")}
-						</h1>
-						<p class="mb-3 text-base md:text-lg text-gray-300 animate-fade-in opacity-0" style="animation-delay: 0.15s; animation-fill-mode: forwards;">
-							{t("home.tagline")}
-						</p>
-
-						<div class="flex flex-wrap items-center justify-end gap-4 animate-fade-in-up">
-							<Link
-								text={t("nav.blog")}
-								href="https://blog.awaae001.top"
-								icon="mdi:pen"
-								variant="capsule"
-								external={true}
-							/>
-							<Link
-								id="btn-website"
-								text={t("nav.starMap")}
-								icon="mdi:web"
-								variant="article"
-							/>
-							<a
-								href={localizePath("/projects", lang)}
-								class="grid h-8 w-8 place-items-center text-gray-300 transition hover:text-white"
-								data-pill-label={t("nav.projects")}
-								aria-label={t("nav.projects")}
-							>
-								<Icon name="mdi:rocket-launch-outline" class="h-5 w-5" />
-							</a>
-							<a
-								href="/tools"
-								class="grid h-8 w-8 place-items-center text-gray-300 transition hover:text-white"
-								data-pill-label={t("nav.tools")}
-								aria-label={t("nav.tools")}
-							>
-								<Icon name="mdi:toolbox-outline" class="h-5 w-5" />
-							</a>
-							<Link
-								text={t("nav.about")}
-								href={localizePath("/about", lang)}
-								variant="article"
-							/>
-						</div>
-					</section>
-				</main>
+	<div id="main-content" class="snap-container fixed inset-0 z-20 overflow-y-auto snap-y snap-mandatory scroll-smooth transition-opacity duration-500">
+		<!-- 阅读进度 -->
+		<div id="scroll-progress" class="fixed left-6 md:left-10 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-4 pointer-events-none opacity-0 transition-opacity duration-500">
+			<span class="text-xs tracking-widest text-white/50" style="writing-mode: vertical-rl;">{t("about.progress")}</span>
+			<div class="w-0.5 h-32 md:h-48 bg-white/10 rounded-full relative overflow-hidden">
+				<div id="scroll-indicator" class="absolute top-0 left-0 w-full bg-white/80 rounded-full" style="height: 0%; transition: height 0.15s ease-out;"></div>
 			</div>
+			<span id="scroll-percentage" class="text-xs font-mono text-white/50 mt-1 w-8 text-center">0%</span>
 		</div>
+
+		<main class="relative flex flex-col items-center justify-center h-dvh px-4 text-right font-sans snap-center">
+			<section>
+				<h1 class="mb-12 md:mb-16 text-2xl md:text-5xl font-bold text-white tracking-tight animate-fade-in">
+					{t("home.greeting")}
+				</h1>
+				<p class="mb-3 text-base md:text-lg text-gray-300 animate-fade-in opacity-0" style="animation-delay: 0.15s; animation-fill-mode: forwards;">
+					{t("home.tagline")}
+				</p>
+
+				<div class="flex flex-wrap items-center justify-end gap-4 animate-fade-in-up">
+					<Link
+						text={t("nav.blog")}
+						href="https://blog.awaae001.top"
+						icon="mdi:pen"
+						variant="capsule"
+						external={true}
+					/>
+					<Link
+						id="btn-website"
+						text={t("nav.starMap")}
+						icon="mdi:web"
+						variant="article"
+					/>
+					<a
+						href={localizePath("/projects", lang)}
+						class="grid h-8 w-8 place-items-center text-gray-300 transition hover:text-white"
+						data-pill-label={t("nav.projects")}
+						aria-label={t("nav.projects")}
+					>
+						<Icon name="mdi:rocket-launch-outline" class="h-5 w-5" />
+					</a>
+					<a
+						href="/tools"
+						class="grid h-8 w-8 place-items-center text-gray-300 transition hover:text-white"
+						data-pill-label={t("nav.tools")}
+						aria-label={t("nav.tools")}
+					>
+						<Icon name="mdi:toolbox-outline" class="h-5 w-5" />
+					</a>
+					<Link
+						text={t("nav.about")}
+						href="#about"
+						variant="article"
+					/>
+				</div>
+			</section>
+
+			<a href="#about" aria-label={t("nav.about")} class="scroll-hint absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 hover:text-white transition-colors">
+				<Icon name="mdi:chevron-double-down" class="w-6 h-6" />
+			</a>
+		</main>
+
+		<AboutSections lang={lang} />
 	</div>
 
 	<div class="fixed top-6 right-6 z-20 flex gap-4">
@@ -125,6 +137,23 @@ const t = useTranslations(lang);
 		animation: fadeInUp var(--motion-duration-slow) var(--motion-ease) 240ms forwards;
 		opacity: 0;
 	}
+
+	@keyframes hintBounce {
+		0%, 100% { transform: translate(-50%, 0); }
+		50% { transform: translate(-50%, 6px); }
+	}
+
+	.scroll-hint {
+		animation: hintBounce 2s ease-in-out infinite;
+	}
+
+	.snap-container {
+		scrollbar-width: none;
+	}
+
+	.snap-container::-webkit-scrollbar {
+		display: none;
+	}
 </style>
 
 <script>
@@ -141,6 +170,27 @@ const t = useTranslations(lang);
 		const flightModeLabel = document.getElementById('flight-mode-label');
 		const mainContent = document.getElementById('main-content');
 		const mainMask = document.getElementById('main-mask');
+		const progress = document.getElementById('scroll-progress');
+		const indicator = document.getElementById('scroll-indicator');
+		const percentageText = document.getElementById('scroll-percentage');
+
+		if (mainContent && mainMask && progress && indicator && percentageText) {
+			// 往下滚进入关于部分：背景逐渐压暗，显示阅读进度
+			const updateScroll = () => {
+				const { scrollTop, scrollHeight, clientHeight } = mainContent;
+				const entered = Math.min(scrollTop / clientHeight, 1);
+				const aboutRange = scrollHeight - clientHeight * 2;
+				const percent = aboutRange > 0 ? Math.max(0, (scrollTop - clientHeight) / aboutRange) * 100 : 0;
+
+				mainMask.style.backgroundColor = `rgb(13 17 23 / ${entered * 0.6})`;
+				progress.style.opacity = entered > 0.5 ? '1' : '0';
+				indicator.style.height = `${percent}%`;
+				percentageText.textContent = `${Math.round(percent)}%`;
+			};
+
+			mainContent.addEventListener('scroll', updateScroll, { passive: true });
+			updateScroll();
+		}
 
 		if (btnWebsite && btnBack && btnReset && btnToggleFlight && mainContent && mainMask) {
 			const setFlightMode = (enabled: boolean) => {

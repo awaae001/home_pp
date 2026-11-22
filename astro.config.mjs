@@ -13,6 +13,10 @@ export default defineConfig({
       prefixDefaultLocale: false
     }
   },
+  redirects: {
+    '/about': '/#about',
+    '/zh/about': '/zh#about',
+  },
   integrations: [icon()],
   vite: {
     plugins: [tailwindcss()],
