@@ -27,6 +27,7 @@ const t = useTranslations(lang);
   data-loader-cached-model={t("home.solar.cachedModel")}
 >
   <canvas id="solar-canvas"></canvas>
+  <canvas id="glass-canvas" aria-hidden="true"></canvas>
   <output id="camera-position" aria-live="polite">
     <span id="flight-hud"></span>
     <span id="camera-stats"></span>
@@ -134,6 +135,19 @@ const t = useTranslations(lang);
     height: 100%;
     opacity: 0;
     transition: opacity 1200ms var(--motion-ease);
+  }
+
+  /* 隔着观景窗：窗外模糊，玻璃上的窗棂和划痕在另一层保持清晰 */
+  #solar-canvas {
+    filter: blur(calc(var(--glass, 0) * 1.5px));
+  }
+
+  #glass-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
   }
 
   #solar-canvas.is-ready {

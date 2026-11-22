@@ -11,18 +11,33 @@ const t = useTranslations(lang);
 const greetings = t('about.greetings');
 ---
 
-<!-- 个人头像 -->
-<section id="about" class="h-dvh w-full flex flex-col items-center justify-center snap-center relative">
-	<img src="/avatar.webp" alt="awaae001" class="w-32 h-32 rounded-full object-cover shadow-lg border-2 border-white/20 hover:scale-105 transition-transform duration-300" />
-
-	<div class="mt-6 text-lg text-white flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-		<span class="text-2xl font-bold">awaae001</span>
-		<span class="hidden sm:inline text-white/30">|</span>
-		<span class="text-gray-300 tracking-wide">{t('about.role')}</span>
-		<span class="hidden sm:inline text-white/30">|</span>
-		<span class="text-gray-300 tracking-wide">{t('about.me')}</span>
+<!-- 关于我：镜头贴近太阳，桌面端太阳在左、文字在右，手机端太阳在上、文字在下。
+     两屏高的轨道里 sticky 钉住，第二、三屏镜头倒退进舱，文字跟着太阳一起缩小（--zoom 由镜头给出） -->
+<div class="relative h-[300dvh] w-full">
+	<div id="about" class="absolute top-0 h-dvh w-full snap-center"></div>
+	<div class="absolute top-[100dvh] h-dvh w-full snap-center" aria-hidden="true"></div>
+	<div class="absolute top-[200dvh] h-dvh w-full snap-center" aria-hidden="true"></div>
+	<div class="sticky top-0 h-dvh w-full">
+		<div id="about-stage" class="about-stage h-full w-full flex flex-col items-center justify-end pb-[16dvh] md:justify-center md:pb-0 md:pl-[50%]">
+			<div class="flex items-center gap-5 text-white">
+				<img src="/avatar.webp" alt="awaae001" class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-white/20" />
+				<div class="flex flex-col gap-1">
+					<span class="text-2xl md:text-3xl font-bold">awaae001</span>
+					<span class="text-gray-300 tracking-wide">{t('about.role')} {t('about.me')}</span>
+				</div>
+			</div>
+		</div>
 	</div>
-</section>
+</div>
+
+<style>
+	.about-stage {
+		transform: scale(var(--zoom, 1));
+		transform-origin: 50% 50%;
+		/* 隔着观景窗玻璃，和窗外一起轻微模糊 */
+		filter: blur(calc(var(--glass, 0) * 1.5px));
+	}
+</style>
 
 <!-- 契机与故事 -->
 <section class="h-dvh w-full flex flex-col items-center justify-center snap-center px-4 relative">

@@ -31,7 +31,7 @@ export interface CelestialPlanet {
 
 function createSun(): THREE.Mesh {
   return new THREE.Mesh(
-    new THREE.SphereGeometry(1.5, 32, 32),
+    new THREE.SphereGeometry(1.5, 128, 64),
     new THREE.MeshBasicMaterial({ color: 0xfdb813 }),
   );
 }

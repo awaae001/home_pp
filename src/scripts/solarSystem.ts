@@ -5,6 +5,12 @@ import { createCelestialObjects } from './solar-system/celestialObjects';
 import { createSceneContext } from './solar-system/scene';
 import { FlightControls } from './solar-system/flightControls';
 import { createVoyagerController } from './solar-system/voyager';
+import { createStoryCamera } from './solar-system/storyCamera';
+import { createObservationDeck } from './solar-system/observationDeck';
+
+/** 男人走进画面：滚到第几屏开始走，走完要几秒 */
+const WALK_START = 2.5;
+const WALK_SECONDS = 4;
 
 export type Dispose = () => void;
 
@@ -38,6 +44,12 @@ export async function initSolarSystem(
   const cameraStats = document.getElementById('camera-stats');
   const flightHud = document.getElementById('flight-hud');
   const mainMask = document.getElementById('main-mask');
+  const mainContent = document.getElementById('main-content');
+  const aboutStage = document.getElementById('about-stage');
+  const deck = createObservationDeck(document.getElementById('glass-canvas') as HTMLCanvasElement);
+  const storyCamera = createStoryCamera(context.camera, context.controls.target, deck);
+  let storyMoving = true;
+  let walkProgress = 0;
   const solarContainer = document.getElementById('solar-system-container');
   const flightHudEnabled = solarContainer?.dataset.flightEnabled ?? 'Flight mode on';
   const flightHudDisabled = solarContainer?.dataset.flightDisabled ?? 'Flight mode off';
@@ -139,9 +151,10 @@ export async function initSolarSystem(
     }
     animationId = requestAnimationFrame(frame);
 
+    // 主页内容显示时由滚动驱动镜头；镜头静止后降帧
     const isCovered = mainMask !== null && mainMask.style.pointerEvents !== 'none';
-    if (isCovered) {
-      const frameInterval = 1000 / 24;
+    if (isCovered && !storyMoving) {
+      const frameInterval = 1000 / 30;
       if (timestamp < nextBackgroundFrameAt) {
         return;
       }
@@ -164,7 +177,23 @@ export async function initSolarSystem(
       context.controls,
     );
 
-    if (cameraMode.kind === 'resetting') {
+    if (isCovered) {
+      cameraMode = { kind: 'free' };
+      context.controls.enabled = true;
+      const progress = mainContent ? mainContent.scrollTop / Math.max(mainContent.clientHeight, 1) : 0;
+      const story = storyCamera.update(progress, delta);
+      storyMoving = story.moving;
+      aboutStage?.style.setProperty('--zoom', story.zoom.toFixed(4));
+      document.documentElement.style.setProperty('--glass', story.glass.toFixed(3));
+      deck.setVisible(story.inside);
+
+      // 滚到第 3 屏男人就开始走，按固定步速慢慢走进来；往回滚就倒着走出去
+      const goal = progress >= WALK_START ? 1 : 0;
+      const step = delta / WALK_SECONDS;
+      walkProgress += THREE.MathUtils.clamp(goal - walkProgress, -step, step);
+      deck.walk(walkProgress);
+      storyMoving ||= walkProgress !== goal;
+    } else if (cameraMode.kind === 'resetting') {
       context.camera.position.lerp(context.defaultPosition, 0.08);
       context.controls.target.lerp(cameraMode.target, 0.08);
 
@@ -179,10 +208,15 @@ export async function initSolarSystem(
       }
     }
 
-    if (cameraMode.kind === 'free') {
-      flightControls.update(delta);
+    if (!isCovered) {
+      storyMoving = true;
+      document.documentElement.style.setProperty('--glass', '0');
+      deck.setVisible(false);
+      if (cameraMode.kind === 'free') {
+        flightControls.update(delta);
+      }
+      context.controls.update();
     }
-    context.controls.update();
     renderedFrames += 1;
     const statsDuration = timestamp - statsStartedAt;
     if (statsDuration >= 500) {
@@ -200,6 +234,7 @@ export async function initSolarSystem(
       renderedFrames = 0;
     }
     context.renderer.render(context.scene, context.camera);
+    deck.render(context.camera);
   };
 
   const syncAnimation = (): void => {
@@ -224,6 +259,7 @@ export async function initSolarSystem(
   resetButton?.addEventListener('click', resetView);
   context.controls.addEventListener('start', stopVoyagerTracking);
   window.addEventListener('resize', context.resize);
+  window.addEventListener('resize', deck.resize);
   document.addEventListener('visibilitychange', syncAnimation);
 
   console.log('[Solar] 开始下载模型 (Voyager)……');
@@ -256,11 +292,13 @@ export async function initSolarSystem(
     resetButton?.removeEventListener('click', resetView);
     context.controls.removeEventListener('start', stopVoyagerTracking);
     window.removeEventListener('resize', context.resize);
+    window.removeEventListener('resize', deck.resize);
     document.removeEventListener('visibilitychange', syncAnimation);
     interactions.dispose();
     window.removeEventListener('solar-flight-mode-change', setFlightMode);
     flightControls.dispose();
     voyager.dispose();
+    deck.dispose();
     celestialObjects.dispose();
     timer.dispose();
     context.dispose();
